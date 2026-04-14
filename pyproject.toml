@@ -1,0 +1,21 @@
+[project]
+name = "opencode-server-client"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = ["httpx>=0.28.1"]
+
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.hatch.build.targets.wheel]
+packages = ["yaml_reference"]
+
+[build-system]
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8.4.2,<9.0.0", "ruff>=0.15.0,<1.0.0"]
