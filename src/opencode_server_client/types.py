@@ -5,7 +5,7 @@ session metadata, messages, status information, and event types.
 """
 
 from dataclasses import dataclass, field
-from typing import Literal, Union, Optional, List, Dict, Any
+from typing import Literal, Union, Optional
 from datetime import datetime
 
 

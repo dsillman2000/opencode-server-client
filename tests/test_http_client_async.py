@@ -1,6 +1,5 @@
 """Tests for asynchronous HTTP client."""
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import httpx
@@ -10,7 +9,6 @@ from opencode_server_client.config import RetryConfig, ServerConfig
 from opencode_server_client.exceptions import RetryExhaustedError
 from opencode_server_client.http_client.async_client import (
     AsyncHttpClient,
-    calculate_backoff_delay,
 )
 
 
