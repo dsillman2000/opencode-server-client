@@ -1,6 +1,5 @@
 """Tests for synchronous HTTP client."""
 
-from datetime import datetime
 from unittest.mock import MagicMock, Mock, patch
 
 import httpx
