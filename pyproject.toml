@@ -11,11 +11,16 @@ dependencies = ["httpx>=0.28.1"]
 source = "uv-dynamic-versioning"
 
 [tool.hatch.build.targets.wheel]
-packages = ["yaml_reference"]
+packages = ["src/opencode_server_client"]
 
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-dev = ["pytest>=8.4.2,<9.0.0", "ruff>=0.15.0,<1.0.0"]
+dev = [
+    "pytest>=9.0.0,<10",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.0,<1.0.0",
+]
