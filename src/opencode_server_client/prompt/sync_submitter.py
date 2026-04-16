@@ -67,8 +67,8 @@ class PromptSubmitter:
             agent: Optional agent name/config
             system_prompt: Optional system prompt override
             tools: Optional tools configuration
-            provider_id: Optional provider ID (e.g., "nvidia", "openai")
-            model_id: Optional model ID (e.g., "nim", "gpt-4")
+            provider_id: Optional provider ID (e.g., "anthropic", "openai")
+            model_id: Optional model ID (e.g., "opus-4.6", "gpt-5.4")
             abort: If True, abort session before submitting (default: False)
             directory: Optional directory context
 
