@@ -69,27 +69,21 @@ class EventParser:
             # Parse the SSE format: event type and data are separate lines
             lines = data_str.split("\n")
             event_type = None
-            json_data = None
+            event_properties = None
 
             for line in lines:
-                if line.startswith("event:"):
-                    event_type = line[6:].strip()
-                elif line.startswith("data:"):
-                    json_str = line[5:].strip()
-                    try:
-                        json_data = json.loads(json_str)
-                    except json.JSONDecodeError as e:
-                        logger.error(
-                            f"Invalid JSON in SSE data: {json_str}", exc_info=e
-                        )
-                        raise ValueError(f"Invalid JSON in event data: {e}") from e
+                json_payload = json.loads(line.strip())
+                directory = json_payload.get("directory")
+                payload = json_payload.get("payload")
+                event_type = payload.get("type")
+                event_properties = payload.get("properties", {})
 
-            if not event_type or not json_data:
-                logger.warning(f"Missing event type or data in SSE: {data_str}")
+            if not event_type:
+                logger.warning(f"Missing event type or properties in SSE: {data_str}")
                 return None
 
             # Convert JSON to event based on type
-            return self._convert_to_event(event_type, json_data)
+            return self._convert_to_event(event_type, event_properties)
 
         except Exception as e:
             logger.error(f"Error parsing SSE data: {raw_sse_data}", exc_info=e)
@@ -121,57 +115,46 @@ class EventParser:
                 return datetime.fromtimestamp(float(ts_str))
 
             # Helper to validate required fields
-            def check_required(field_name: str):
-                if field_name not in data or data[field_name] is None:
-                    raise ValueError(f"Missing required field: {field_name}")
-                return data[field_name]
+            def check_required(field_name: str, _data=data) -> str:
+                if field_name not in _data or _data[field_name] is None:
+                    raise ValueError(f"Missing required field for '{event_type}': {field_name}\n{_data}")
+                return _data[field_name]
 
             if event_type == "session.status":
                 return SessionStatusEvent(
-                    session_id=check_required("session_id"),
+                    session_id=check_required("sessionID"),
                     status=check_required("status"),
-                    timestamp=parse_timestamp(
-                        data.get("timestamp", datetime.now().isoformat())
-                    ),
+                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
                 )
 
             elif event_type == "session.idle":
                 return SessionIdleEvent(
-                    session_id=check_required("session_id"),
-                    timestamp=parse_timestamp(
-                        data.get("timestamp", datetime.now().isoformat())
-                    ),
+                    session_id=check_required("sessionID"),
+                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
                 )
 
             elif event_type == "message.updated":
                 return MessageUpdatedEvent(
-                    session_id=check_required("session_id"),
-                    message_id=check_required("message_id"),
-                    content=check_required("content"),
-                    timestamp=parse_timestamp(
-                        data.get("timestamp", datetime.now().isoformat())
-                    ),
+                    session_id=check_required("sessionID"),
+                    message_id=check_required("id", check_required("info", data)),
+                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
                 )
 
             elif event_type == "message.part_updated":
                 return MessagePartUpdatedEvent(
-                    session_id=check_required("session_id"),
-                    message_id=check_required("message_id"),
+                    session_id=check_required("sessionID"),
+                    message_id=check_required("messageID"),
                     part_index=int(data.get("part_index", 0)),
                     content=check_required("content"),
-                    timestamp=parse_timestamp(
-                        data.get("timestamp", datetime.now().isoformat())
-                    ),
+                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
                 )
 
             elif event_type == "session.error":
                 return SessionErrorEvent(
-                    session_id=check_required("session_id"),
+                    session_id=check_required("sessionID"),
                     error_message=check_required("error_message"),
                     error_code=data.get("error_code"),
-                    timestamp=parse_timestamp(
-                        data.get("timestamp", datetime.now().isoformat())
-                    ),
+                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
                 )
 
             else:
@@ -180,4 +163,4 @@ class EventParser:
 
         except (KeyError, TypeError, ValueError) as e:
             logger.error(f"Error converting event data: {data}", exc_info=e)
-            raise ValueError(f"Missing or invalid field in event: {e}") from e
+            raise ValueError(f"Missing or invalid field in event type '{event_type}': {e}") from e

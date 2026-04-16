@@ -155,9 +155,7 @@ class EventSubscriber:
         if self._stream_thread and self._stream_thread.is_alive():
             self._stream_thread.join(timeout=timeout)
             if self._stream_thread.is_alive():
-                logger.warning(
-                    f"SSE stream thread did not stop within {timeout}s timeout"
-                )
+                logger.warning(f"SSE stream thread did not stop within {timeout}s timeout")
 
     def _read_sse_stream(self) -> None:
         """Background thread: Read SSE stream and dispatch events.
@@ -172,9 +170,7 @@ class EventSubscriber:
         while not self._stop_event.is_set():
             try:
                 self._reconnect_attempt += 1
-                logger.debug(
-                    f"Connecting to SSE stream (attempt {self._reconnect_attempt})"
-                )
+                logger.debug(f"Connecting to SSE stream (attempt {self._reconnect_attempt})")
 
                 # Use the http_client.stream() method for SSE connection
                 with self.http_client.stream("GET", "/global/event") as response:
@@ -197,9 +193,7 @@ class EventSubscriber:
                             if event_data.get("data"):
                                 try:
                                     # Parse the accumulated event data
-                                    event = self._parser.parse(
-                                        event_data["data"].encode("utf-8")
-                                    )
+                                    event = self._parser.parse(event_data["data"].encode("utf-8"))
                                     if event:
                                         self._dispatch_event(event)
                                 except Exception as e:
@@ -237,8 +231,7 @@ class EventSubscriber:
 
                 # Calculate reconnect delay with exponential backoff
                 delay = min(
-                    self.INITIAL_RECONNECT_DELAY
-                    * (self.RECONNECT_BASE ** (self._reconnect_attempt - 1)),
+                    self.INITIAL_RECONNECT_DELAY * (self.RECONNECT_BASE ** (self._reconnect_attempt - 1)),
                     self.MAX_RECONNECT_DELAY,
                 )
 
@@ -273,14 +266,10 @@ class EventSubscriber:
                         subscription["on_event"](event)
 
                     # Type-specific callbacks
-                    if isinstance(event, SessionIdleEvent) and subscription.get(
-                        "on_idle"
-                    ):
+                    if isinstance(event, SessionIdleEvent) and subscription.get("on_idle"):
                         subscription["on_idle"](event)
 
-                    elif isinstance(event, SessionErrorEvent) and subscription.get(
-                        "on_error"
-                    ):
+                    elif isinstance(event, SessionErrorEvent) and subscription.get("on_error"):
                         subscription["on_error"](event)
 
                 except Exception as e:
