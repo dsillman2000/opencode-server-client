@@ -4,14 +4,10 @@ from time import sleep
 from opencode_server_client import OpencodeServerClient, RetryConfig, ServerConfig
 
 if __name__ == "__main__":
-    config = ServerConfig(
-        base_url="http://localhost:9000", basic_auth=("opencode", "***REMOVED***")
-    )
+    config = ServerConfig(base_url="http://localhost:9000", basic_auth=("opencode", "***REMOVED***"))
     retry = RetryConfig(max_retries=3)
 
-    client = OpencodeServerClient(
-        config, retry, "/home/dsillman2000/python-projects/opencode-server-client"
-    )
+    client = OpencodeServerClient(config, retry, "/home/dsillman2000/python-projects/opencode-server-client")
 
     # Find the deepseek provider and deepseek-chat model
     deepseek_provider = client.providers.get_provider("deepseek")
@@ -31,12 +27,8 @@ if __name__ == "__main__":
 
     print(f"Found provider: {deepseek_provider.id}")
     print(f"Found model: {deepseek_chat_model.id}")
-    print(
-        f"Model capabilities - Text I/O: {deepseek_chat_model.capabilities.has_text_io()}"
-    )
-    print(
-        f"Model capabilities - Toolcall: {deepseek_chat_model.capabilities.has_toolcall()}"
-    )
+    print(f"Model capabilities - Text I/O: {deepseek_chat_model.capabilities.has_text_io()}")
+    print(f"Model capabilities - Toolcall: {deepseek_chat_model.capabilities.has_toolcall()}")
 
     # Subscribe to events
     client.events.subscribe(
