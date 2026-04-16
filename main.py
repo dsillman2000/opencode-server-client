@@ -1,11 +1,7 @@
 import json
+from time import sleep
 
-from opencode_server_client import (
-    OpencodeServerClient,
-    RetryConfig,
-    ServerConfig,
-    SyncHttpClient,
-)
+from opencode_server_client import OpencodeServerClient, RetryConfig, ServerConfig
 
 if __name__ == "__main__":
     config = ServerConfig(base_url="http://localhost:9000", basic_auth=("opencode", "***REMOVED***"))
@@ -16,10 +12,13 @@ if __name__ == "__main__":
         on_event=lambda e: print(f"Received event: {json.dumps(e)}"),
     )
     sessions = client.list_all_sessions()
-    # message_id = client.prompts.submit_prompt(
-    #     session_id="ses_26c29fca0ffeNAaszJjrDAn8bw",
-    #     text="What is the mass of the sun?",
-    #     agent="build",
-    #     provider_id="nvidia",
-    #     model_id="z-ai/glm5",
-    # )
+    session = client.create_session()
+    message_id = client.prompts.submit_prompt(
+        session_id=session["id"],
+        text="What is the mass of the sun?",
+        agent="build",
+        provider_id="nvidia",
+        model_id="z-ai/glm5",
+    )
+    while True:
+        sleep(1)

@@ -232,3 +232,39 @@ class AsyncHttpClient:
         return await self._request_with_retry(
             method, url, directory=directory, **kwargs
         )
+
+    def stream(
+        self, method: str, url: str, directory: Optional[str] = None, **kwargs: Any
+    ):
+        """Stream an async HTTP response for long-lived connections (e.g., SSE).
+
+        This method returns an async context manager that allows streaming responses
+        without retry logic. Use for Server-Sent Events and other streaming
+        protocols that maintain long-lived connections.
+
+        Args:
+            method: HTTP method (GET, POST, DELETE, etc.)
+            url: URL path (relative to base_url)
+            directory: Optional directory context
+            **kwargs: Additional arguments to pass to httpx
+
+        Returns:
+            Async context manager for streaming response
+
+        Example:
+            >>> async with client.stream("GET", "/global/event") as response:
+            ...     async for line in response.aiter_lines():
+            ...         print(line)
+        """
+        headers = kwargs.get("headers", {})
+        if isinstance(headers, dict):
+            headers = dict(headers)  # Make a copy
+        else:
+            headers = dict(headers)
+
+        if directory:
+            headers["X-Opencode-Directory"] = directory
+
+        kwargs["headers"] = headers
+
+        return self._client.stream(method, url, **kwargs)

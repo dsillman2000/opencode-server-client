@@ -6,7 +6,7 @@ in the background thread context.
 
 The EventSubscriber:
 - Manages background thread for reading SSE stream
-- Parses SSE events to typed objects using httpx-sse
+- Parses SSE events to typed objects
 - Invokes user callbacks for matched events
 - Handles reconnection with exponential backoff
 - Supports session_id filtering
@@ -31,9 +31,6 @@ Typical usage:
 import logging
 import threading
 from typing import Callable, Optional
-
-import httpx
-from httpx_sse import connect_sse
 
 from opencode_server_client.events.parser import EventParser
 from opencode_server_client.events.types import (
@@ -166,7 +163,7 @@ class EventSubscriber:
         """Background thread: Read SSE stream and dispatch events.
 
         This method runs in the background thread and:
-        1. Connects to /global/event endpoint using httpx-sse
+        1. Connects to /global/event endpoint using http_client.stream()
         2. Reads SSE events using proper SSE parsing
         3. Parses event data using EventParser
         4. Invokes matching callbacks
@@ -179,38 +176,56 @@ class EventSubscriber:
                     f"Connecting to SSE stream (attempt {self._reconnect_attempt})"
                 )
 
-                # Build full URL for the SSE endpoint
-                base_url = self.http_client.server_config.base_url
-                sse_url = f"{base_url}/global/event"
+                # Use the http_client.stream() method for SSE connection
+                with self.http_client.stream("GET", "/global/event") as response:
+                    # Check response status
+                    response.raise_for_status()
 
-                # Create a new httpx.Client for the SSE connection
-                with httpx.Client(
-                    timeout=self.http_client.server_config.timeout or 30.0
-                ) as client:
-                    # Connect to SSE stream using httpx-sse
-                    with connect_sse(client, "GET", sse_url) as event_source:
-                        # Reset reconnect attempt counter on successful connection
-                        self._reconnect_attempt = 0
+                    # Reset reconnect attempt counter on successful connection
+                    self._reconnect_attempt = 0
 
-                        # Read SSE events
-                        for sse in event_source.iter_sse():
-                            if self._stop_event.is_set():
-                                break
+                    # Read SSE events line by line
+                    # We parse the stream manually to handle non-standard Content-Type
+                    event_data = {}
+                    for line in response.iter_lines():
+                        if self._stop_event.is_set():
+                            break
 
-                            if not sse.data:
-                                continue
+                        line = line.strip()
+                        if not line:
+                            # Empty line signals end of event
+                            if event_data.get("data"):
+                                try:
+                                    # Parse the accumulated event data
+                                    event = self._parser.parse(
+                                        event_data["data"].encode("utf-8")
+                                    )
+                                    if event:
+                                        self._dispatch_event(event)
+                                except Exception as e:
+                                    logger.error(f"Error parsing SSE event: {e}")
+                            event_data = {}
+                            continue
 
-                            try:
-                                # Parse the event data
-                                event = self._parser.parse(sse.data.encode("utf-8"))
+                        # Parse SSE field format: "field: value"
+                        if ":" in line:
+                            field, value = line.split(":", 1)
+                            field = field.strip()
+                            value = value.lstrip()  # Remove leading space after colon
 
-                                if event:
-                                    # Dispatch to matching callbacks
-                                    self._dispatch_event(event)
-
-                            except Exception as e:
-                                logger.error(f"Error parsing SSE event: {e}")
-                                continue
+                            if field == "data":
+                                # Accumulate data lines
+                                if "data" in event_data:
+                                    event_data["data"] += "\n" + value
+                                else:
+                                    event_data["data"] = value
+                            elif field == "event":
+                                event_data["event"] = value
+                            elif field == "id":
+                                event_data["id"] = value
+                            elif field == "retry":
+                                event_data["retry"] = value
+                        # Skip comments (lines starting with :)
 
                 logger.debug("SSE stream ended normally")
 
