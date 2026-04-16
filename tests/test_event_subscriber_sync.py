@@ -7,9 +7,12 @@ from unittest.mock import MagicMock, patch
 
 from opencode_server_client.events.sync_subscriber import EventSubscriber
 from opencode_server_client.events.types import (
+    MessagePartDeltaEvent,
+    MessagePartUpdatedEvent,
     MessageUpdatedEvent,
     SessionErrorEvent,
     SessionIdleEvent,
+    SessionUpdatedEvent,
 )
 
 
@@ -230,7 +233,6 @@ class TestEventSubscriber(TestCase):
         event = MessageUpdatedEvent(
             session_id="abc123",
             message_id="msg1",
-            content="Hello",
             timestamp=datetime.now(),
         )
 
@@ -257,3 +259,179 @@ class TestEventSubscriber(TestCase):
 
         # Should not be called (event doesn't match filter)
         callback_filtered.assert_not_called()
+
+    def test_on_session_updated_callback_invoked(self):
+        """Test on_session_updated callback invoked for SessionUpdatedEvent."""
+        session_updated_callback = MagicMock()
+        self.subscriber.subscribe(on_session_updated=session_updated_callback)
+
+        event = SessionUpdatedEvent(
+            session_id="abc123",
+            info={"status": "busy", "model": "gpt-4"},
+            timestamp=datetime.now(),
+        )
+
+        self.subscriber._dispatch_event(event)
+
+        session_updated_callback.assert_called_once_with(event)
+
+    def test_on_message_part_updated_callback_invoked(self):
+        """Test on_message_part_updated callback invoked for MessagePartUpdatedEvent."""
+        part_updated_callback = MagicMock()
+        self.subscriber.subscribe(on_message_part_updated=part_updated_callback)
+
+        event = MessagePartUpdatedEvent(
+            session_id="abc123",
+            message_id="msg1",
+            part_id="part1",
+            part={"id": "part1", "type": "text", "text": "Hello"},
+            timestamp=datetime.now(),
+        )
+
+        self.subscriber._dispatch_event(event)
+
+        part_updated_callback.assert_called_once_with(event)
+
+    def test_on_message_part_delta_callback_invoked(self):
+        """Test on_message_part_delta callback invoked for MessagePartDeltaEvent."""
+        part_delta_callback = MagicMock()
+        self.subscriber.subscribe(on_message_part_delta=part_delta_callback)
+
+        event = MessagePartDeltaEvent(
+            session_id="abc123",
+            message_id="msg1",
+            part_id="part1",
+            field="text",
+            delta=" world",
+            timestamp=datetime.now(),
+        )
+
+        self.subscriber._dispatch_event(event)
+
+        part_delta_callback.assert_called_once_with(event)
+
+    def test_all_new_callbacks_registered(self):
+        """Test all three new callbacks can be registered together."""
+        session_updated_callback = MagicMock()
+        part_updated_callback = MagicMock()
+        part_delta_callback = MagicMock()
+
+        self.subscriber.subscribe(
+            on_session_updated=session_updated_callback,
+            on_message_part_updated=part_updated_callback,
+            on_message_part_delta=part_delta_callback,
+        )
+
+        self.assertEqual(len(self.subscriber._subscriptions), 1)
+        subscription = self.subscriber._subscriptions[0]
+        self.assertEqual(subscription["on_session_updated"], session_updated_callback)
+        self.assertEqual(subscription["on_message_part_updated"], part_updated_callback)
+        self.assertEqual(subscription["on_message_part_delta"], part_delta_callback)
+
+    def test_session_updated_with_filtering(self):
+        """Test SessionUpdatedEvent with session_id filtering."""
+        callback_filtered = MagicMock()
+        callback_all = MagicMock()
+
+        self.subscriber.subscribe(
+            on_session_updated=callback_filtered,
+            session_id_filter="abc123",
+        )
+        self.subscriber.subscribe(on_session_updated=callback_all)
+
+        # Event for filtered session
+        event1 = SessionUpdatedEvent(
+            session_id="abc123",
+            info={"status": "busy"},
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(event1)
+
+        # Event for different session
+        event2 = SessionUpdatedEvent(
+            session_id="xyz789",
+            info={"status": "idle"},
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(event2)
+
+        # Filtered callback called once (only for matching session)
+        self.assertEqual(callback_filtered.call_count, 1)
+        # All callback called twice (for both events)
+        self.assertEqual(callback_all.call_count, 2)
+
+    def test_message_part_delta_with_filtering(self):
+        """Test MessagePartDeltaEvent with session_id filtering."""
+        callback_filtered = MagicMock()
+        callback_all = MagicMock()
+
+        self.subscriber.subscribe(
+            on_message_part_delta=callback_filtered,
+            session_id_filter="session1",
+        )
+        self.subscriber.subscribe(on_message_part_delta=callback_all)
+
+        # Event for filtered session
+        event1 = MessagePartDeltaEvent(
+            session_id="session1",
+            message_id="msg1",
+            part_id="part1",
+            field="text",
+            delta="hello",
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(event1)
+
+        # Event for different session
+        event2 = MessagePartDeltaEvent(
+            session_id="session2",
+            message_id="msg1",
+            part_id="part1",
+            field="text",
+            delta=" world",
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(event2)
+
+        # Filtered callback called once (only for matching session)
+        self.assertEqual(callback_filtered.call_count, 1)
+        # All callback called twice (for both events)
+        self.assertEqual(callback_all.call_count, 2)
+
+    def test_mixed_callbacks_dispatch(self):
+        """Test all event types dispatched with mixed callbacks."""
+        on_event_callback = MagicMock()
+        on_session_updated_callback = MagicMock()
+        on_part_delta_callback = MagicMock()
+
+        self.subscriber.subscribe(
+            on_event=on_event_callback,
+            on_session_updated=on_session_updated_callback,
+            on_message_part_delta=on_part_delta_callback,
+        )
+
+        # Dispatch SessionUpdatedEvent
+        session_event = SessionUpdatedEvent(
+            session_id="abc123",
+            info={"status": "busy"},
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(session_event)
+
+        # Dispatch MessagePartDeltaEvent
+        delta_event = MessagePartDeltaEvent(
+            session_id="abc123",
+            message_id="msg1",
+            part_id="part1",
+            field="text",
+            delta="test",
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(delta_event)
+
+        # on_event should be called for both
+        self.assertEqual(on_event_callback.call_count, 2)
+        # on_session_updated should be called once
+        self.assertEqual(on_session_updated_callback.call_count, 1)
+        # on_part_delta should be called once
+        self.assertEqual(on_part_delta_callback.call_count, 1)

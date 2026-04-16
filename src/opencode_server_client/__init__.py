@@ -33,6 +33,8 @@ exponential backoff for transient failures.
 - `SessionIdleEvent`: Session became idle
 - `MessageUpdatedEvent`: Message content updated
 - `MessagePartUpdatedEvent`: Partial message update (streaming)
+- `SessionUpdatedEvent`: Session metadata updated (new)
+- `MessagePartDeltaEvent`: Incremental message part update (new)
 - `SessionErrorEvent`: Error in session
 
 **Type Definitions:**
@@ -72,12 +74,14 @@ from opencode_server_client.events import (
     AnyEvent,
     EventParser,
     EventSubscriber,
+    MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatus,
     SessionStatusEvent,
+    SessionUpdatedEvent,
 )
 from opencode_server_client.exceptions import (
     EventStreamError,
@@ -133,6 +137,8 @@ __all__ = [
     "SessionIdleEvent",
     "MessageUpdatedEvent",
     "MessagePartUpdatedEvent",
+    "SessionUpdatedEvent",
+    "MessagePartDeltaEvent",
     "SessionErrorEvent",
     "SessionStatus",
     "AnyEvent",

@@ -16,12 +16,14 @@ from opencode_server_client.events.parser import EventParser
 from opencode_server_client.events.sync_subscriber import EventSubscriber
 from opencode_server_client.events.types import (
     AnyEvent,
+    MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatus,
     SessionStatusEvent,
+    SessionUpdatedEvent,
 )
 
 __all__ = [
@@ -31,6 +33,8 @@ __all__ = [
     "SessionIdleEvent",
     "MessageUpdatedEvent",
     "MessagePartUpdatedEvent",
+    "SessionUpdatedEvent",
+    "MessagePartDeltaEvent",
     "SessionErrorEvent",
     "SessionStatus",
     "AnyEvent",

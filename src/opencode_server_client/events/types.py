@@ -7,8 +7,10 @@ endpoint and represent real-time changes in session state.
 Shared event types:
 - SessionStatusEvent: Session status changed (idle/busy/error)
 - SessionIdleEvent: Session transitioned to idle state
+- SessionUpdatedEvent: Session metadata updated
 - MessageUpdatedEvent: Message content updated in a session
 - MessagePartUpdatedEvent: Partial message update (streaming content)
+- MessagePartDeltaEvent: Incremental delta for message part content
 - SessionErrorEvent: Error occurred in session
 
 Examples:
@@ -19,7 +21,7 @@ Examples:
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 # Session status type - can be idle, busy, or in retry state
 SessionStatus = Union[
@@ -56,6 +58,21 @@ class SessionIdleEvent:
 
 
 @dataclass
+class SessionUpdatedEvent:
+    """Event indicating session metadata was updated.
+
+    Attributes:
+        session_id: ID of the session
+        info: Updated session information dict
+        timestamp: When the update occurred
+    """
+
+    session_id: str
+    info: dict
+    timestamp: datetime
+
+
+@dataclass
 class MessageUpdatedEvent:
     """Event indicating a message was updated or created.
 
@@ -68,7 +85,6 @@ class MessageUpdatedEvent:
 
     session_id: str
     message_id: str
-    content: str
     timestamp: datetime
 
 
@@ -81,15 +97,38 @@ class MessagePartUpdatedEvent:
     Attributes:
         session_id: ID of the session containing the message
         message_id: ID of the message
-        part_index: Index of this message part (for ordering)
-        content: Content of this part
+        part_id: ID of this message part
+        part: Part data dict containing type, content, etc.
         timestamp: When the update occurred
     """
 
     session_id: str
     message_id: str
-    part_index: int
-    content: str
+    part_id: str
+    part: dict
+    timestamp: datetime
+
+
+@dataclass
+class MessagePartDeltaEvent:
+    """Event indicating an incremental delta for message part content.
+
+    Used for streaming text responses where delta updates arrive.
+
+    Attributes:
+        session_id: ID of the session containing the message
+        message_id: ID of the message
+        part_id: ID of this message part
+        field: Field being updated (e.g., "text")
+        delta: The incremental change to the field
+        timestamp: When the update occurred
+    """
+
+    session_id: str
+    message_id: str
+    part_id: str
+    field: str
+    delta: str
     timestamp: datetime
 
 
@@ -114,7 +153,9 @@ class SessionErrorEvent:
 AnyEvent = Union[
     SessionStatusEvent,
     SessionIdleEvent,
+    SessionUpdatedEvent,
     MessageUpdatedEvent,
     MessagePartUpdatedEvent,
+    MessagePartDeltaEvent,
     SessionErrorEvent,
 ]

@@ -21,11 +21,13 @@ from typing import Optional
 
 from opencode_server_client.events.types import (
     AnyEvent,
+    MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatusEvent,
+    SessionUpdatedEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,8 +43,10 @@ class EventParser:
     Supported event types:
         - session.status: SessionStatusEvent
         - session.idle: SessionIdleEvent
+        - session.updated: SessionUpdatedEvent
         - message.updated: MessageUpdatedEvent
-        - message.part_updated: MessagePartUpdatedEvent
+        - message.part.updated: MessagePartUpdatedEvent
+        - message.part.delta: MessagePartDeltaEvent
         - session.error: SessionErrorEvent
     """
 
@@ -103,50 +107,88 @@ class EventParser:
             ValueError: If required fields are missing or invalid
         """
         try:
-            # Helper to parse ISO timestamp
-            def parse_timestamp(ts_str: str) -> datetime:
-                if isinstance(ts_str, str):
+            # Helper to parse ISO timestamp or Unix timestamp
+            def parse_timestamp(ts: any) -> datetime:
+                if isinstance(ts, str):
                     # Try ISO format first
                     try:
-                        return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
                     except ValueError:
                         # Fall back to Unix timestamp
-                        return datetime.fromtimestamp(float(ts_str))
-                return datetime.fromtimestamp(float(ts_str))
+                        return datetime.fromtimestamp(float(ts) / 1000)
+                elif isinstance(ts, (int, float)):
+                    # Unix timestamp in milliseconds or seconds
+                    if ts > 10000000000:  # Likely milliseconds
+                        return datetime.fromtimestamp(ts / 1000)
+                    else:  # Likely seconds
+                        return datetime.fromtimestamp(ts)
+                return datetime.now()
 
             # Helper to validate required fields
             def check_required(field_name: str, _data=data) -> str:
                 if field_name not in _data or _data[field_name] is None:
-                    raise ValueError(f"Missing required field for '{event_type}': {field_name}\n{_data}")
+                    raise ValueError(
+                        f"Missing required field for '{event_type}': {field_name}\n{_data}"
+                    )
                 return _data[field_name]
 
             if event_type == "session.status":
                 return SessionStatusEvent(
                     session_id=check_required("sessionID"),
                     status=check_required("status"),
-                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
+                    timestamp=parse_timestamp(
+                        data.get("timestamp", datetime.now().isoformat())
+                    ),
                 )
 
             elif event_type == "session.idle":
                 return SessionIdleEvent(
                     session_id=check_required("sessionID"),
-                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
+                    timestamp=parse_timestamp(
+                        data.get("timestamp", datetime.now().isoformat())
+                    ),
+                )
+
+            elif event_type == "session.updated":
+                return SessionUpdatedEvent(
+                    session_id=check_required("sessionID"),
+                    info=check_required("info"),
+                    timestamp=parse_timestamp(
+                        data.get("time", datetime.now().isoformat())
+                    ),
                 )
 
             elif event_type == "message.updated":
                 return MessageUpdatedEvent(
                     session_id=check_required("sessionID"),
                     message_id=check_required("id", check_required("info", data)),
-                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
+                    timestamp=parse_timestamp(
+                        data.get("timestamp", datetime.now().isoformat())
+                    ),
                 )
 
-            elif event_type == "message.part_updated":
+            elif event_type == "message.part.updated":
+                part = check_required("part")
                 return MessagePartUpdatedEvent(
                     session_id=check_required("sessionID"),
                     message_id=check_required("messageID"),
-                    part_index=int(data.get("part_index", 0)),
-                    content=check_required("content"),
-                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
+                    part_id=part.get("id", ""),
+                    part=part,
+                    timestamp=parse_timestamp(
+                        data.get("time", datetime.now().isoformat())
+                    ),
+                )
+
+            elif event_type == "message.part.delta":
+                return MessagePartDeltaEvent(
+                    session_id=check_required("sessionID"),
+                    message_id=check_required("messageID"),
+                    part_id=check_required("partID"),
+                    field=check_required("field"),
+                    delta=check_required("delta"),
+                    timestamp=parse_timestamp(
+                        data.get("timestamp", datetime.now().isoformat())
+                    ),
                 )
 
             elif event_type == "session.error":
@@ -154,13 +196,17 @@ class EventParser:
                     session_id=check_required("sessionID"),
                     error_message=check_required("error_message"),
                     error_code=data.get("error_code"),
-                    timestamp=parse_timestamp(data.get("timestamp", datetime.now().isoformat())),
+                    timestamp=parse_timestamp(
+                        data.get("timestamp", datetime.now().isoformat())
+                    ),
                 )
 
             else:
-                logger.warning(f"Unknown event type: {event_type}")
+                logger.warning(f"Unknown event type: {event_type} with data: {data}")
                 return None
 
         except (KeyError, TypeError, ValueError) as e:
             logger.error(f"Error converting event data: {data}", exc_info=e)
-            raise ValueError(f"Missing or invalid field in event type '{event_type}': {e}") from e
+            raise ValueError(
+                f"Missing or invalid field in event type '{event_type}': {e}"
+            ) from e
