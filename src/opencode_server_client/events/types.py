@@ -21,7 +21,7 @@ Examples:
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 # Session status type - can be idle, busy, or in retry state
 SessionStatus = Union[

@@ -83,7 +83,7 @@ class EventParser:
 
             for line in lines:
                 json_payload = json.loads(line.strip())
-                directory = json_payload.get("directory")
+                # directory = json_payload.get("directory")
                 payload = json_payload.get("payload")
                 event_type = payload.get("type")
                 event_properties = payload.get("properties", {})
@@ -179,7 +179,7 @@ class EventParser:
                 message_id = data.get("messageID") or part.get("messageID")
                 if not message_id:
                     raise ValueError(
-                        f"Missing required field: messageID not found at top level or in part object"
+                        "Missing required field: messageID not found at top level or in part object"
                     )
                 return MessagePartUpdatedEvent(
                     session_id=check_required("sessionID"),

@@ -196,20 +196,6 @@ class TestEventParser(TestCase):
 
     def test_parse_message_part_delta_event_missing_delta(self):
         """Test MessagePartDeltaEvent with missing delta raises error."""
-        sse_data = b'{"directory": null, "payload": {"type": "message.part.delta", "properties": {"sessionID": "abc123", "messageID": "msg1", "partID": "part1", "field": "text", "timestamp": 1713177602000}}}'
-
-        with self.assertRaises(ValueError):
-            self.parser.parse(sse_data)
-
-    def test_parse_message_part_updated_event_missing_message_id(self):
-        """Test MessagePartUpdatedEvent with missing messageID raises error."""
-        sse_data = b'event: message.part.updated\ndata: {"sessionID": "abc123", "part": {"id": "part1"}, "time": 1713177601000}'
-
-        with self.assertRaises(ValueError):
-            self.parser.parse(sse_data)
-
-    def test_parse_message_part_delta_event_missing_delta(self):
-        """Test MessagePartDeltaEvent with missing delta raises error."""
         sse_data = b'event: message.part.delta\ndata: {"sessionID": "abc123", "messageID": "msg1", "partID": "part1", "field": "text", "timestamp": 1713177602000}'
 
         with self.assertRaises(ValueError):
