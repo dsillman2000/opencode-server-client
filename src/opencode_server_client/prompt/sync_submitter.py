@@ -93,8 +93,8 @@ class PromptSubmitter:
 
         # Build the payload
         payload = {
-            "parts": [{"type": "text", "text": text, "id": "prt_" + str(uuid.uuid4())}],
-            "messageID": message_id,
+            "text": text,
+            "message_id": message_id,
         }
 
         if agent:
@@ -114,7 +114,7 @@ class PromptSubmitter:
             response = self.http_client.post(
                 f"/session/{session_id}/prompt_async",
                 json=payload,
-                # directory=directory,
+                directory=directory,
             )
             response.raise_for_status()
             # Should raise a 204 No Content if successful.

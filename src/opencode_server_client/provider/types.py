@@ -157,8 +157,7 @@ class ProviderList:
     def from_dict(cls, data: dict) -> "ProviderList":
         """Create a ProviderList from API response data."""
         all_providers = {}
-        for provider_data in data.get("all", []):
-            provider_id = provider_data.get("id")
+        for provider_id, provider_data in data.get("all", {}).items():
             all_providers[provider_id] = Provider.from_dict(provider_id, provider_data)
 
         connected = data.get("connected", [])
