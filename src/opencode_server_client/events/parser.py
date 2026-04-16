@@ -169,9 +169,15 @@ class EventParser:
 
             elif event_type == "message.part.updated":
                 part = check_required("part")
+                # messageID can be at top level or inside part object
+                message_id = data.get("messageID") or part.get("messageID")
+                if not message_id:
+                    raise ValueError(
+                        f"Missing required field: messageID not found at top level or in part object"
+                    )
                 return MessagePartUpdatedEvent(
                     session_id=check_required("sessionID"),
-                    message_id=check_required("messageID"),
+                    message_id=message_id,
                     part_id=part.get("id", ""),
                     part=part,
                     timestamp=parse_timestamp(
