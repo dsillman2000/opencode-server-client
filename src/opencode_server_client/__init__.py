@@ -12,11 +12,21 @@ exponential backoff for transient failures.
 - `ServerConfig`: Configuration for OpenCode server connection (base_url, auth, timeout)
 - `RetryConfig`: Configuration for exponential backoff retry behavior (max_retries, delays, base)
 
+**Provider Management (Layer 1):**
+- `ProviderManager`: Query available providers and their models with capabilities
+
 **Session Management (Layer 2):**
-- `OpencodeServerClient`: Main synchronous client with session and event management
+- `OpencodeServerClient`: Main synchronous client with provider, session, and event management
 - `SessionManager`: CRUD operations for sessions
 - `PromptSubmitter`: Submit prompts and manage session abortion
 - `EventSubscriber`: Subscribe to real-time events via SSE (background thread)
+
+**Provider & Model Types:**
+- `Provider`: Provider information with available models
+- `Model`: Individual model with capabilities and pricing
+- `ModelCapabilities`: Capabilities like text I/O, tool calls, reasoning
+- `InputCapabilities` / `OutputCapabilities`: Specific I/O capabilities
+- `ModelCost`: Pricing information for input/output
 
 **Event Types:**
 - `SessionStatusEvent`: Session status changed
@@ -40,13 +50,20 @@ Example:
     >>> from opencode_server_client import OpencodeServerClient, ServerConfig
     >>> config = ServerConfig(base_url="http://localhost:8000")
     >>> with OpencodeServerClient(config, default_directory="/path") as client:
-    ...     session = client.create_session(title="My Session")
-    ...     messages = client.submit_prompt_and_wait(
-    ...         session_id=session["session_id"],
-    ...         text="What's in this directory?"
-    ...     )
-    ...     for msg in messages:
-    ...         print(msg)
+    ...     # Query available providers and models
+    ...     deepseek = client.providers.get_provider("deepseek")
+    ...     model = deepseek.get_model("deepseek-chat")
+    ...     if model.capabilities.has_text_io():
+    ...         # Create a session and submit a prompt
+    ...         session = client.create_session(title="My Session")
+    ...         messages = client.submit_prompt_and_wait(
+    ...             session_id=session["session_id"],
+    ...             text="What's in this directory?",
+    ...             provider_id="deepseek",
+    ...             model_id="deepseek-chat"
+    ...         )
+    ...         for msg in messages:
+    ...             print(msg)
 """
 
 from opencode_server_client.client_sync import OpencodeServerClient
@@ -74,6 +91,16 @@ from opencode_server_client.exceptions import (
 )
 from opencode_server_client.http_client import AsyncHttpClient, SyncHttpClient
 from opencode_server_client.prompt import PromptSubmitter
+from opencode_server_client.provider import ProviderManager
+from opencode_server_client.provider.types import (
+    InputCapabilities,
+    Model,
+    ModelCapabilities,
+    ModelCost,
+    OutputCapabilities,
+    Provider,
+    ProviderList,
+)
 from opencode_server_client.session import SessionManager
 from opencode_server_client.types import (
     AssistantMessage,
@@ -88,9 +115,18 @@ __all__ = [
     # Main Client
     "OpencodeServerClient",
     # Managers
+    "ProviderManager",
     "SessionManager",
     "PromptSubmitter",
     "EventSubscriber",
+    # Provider Types
+    "Provider",
+    "ProviderList",
+    "Model",
+    "ModelCapabilities",
+    "ModelCost",
+    "InputCapabilities",
+    "OutputCapabilities",
     # Events
     "EventParser",
     "SessionStatusEvent",

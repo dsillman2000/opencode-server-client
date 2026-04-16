@@ -37,6 +37,7 @@ from opencode_server_client.events.types import (
 )
 from opencode_server_client.http_client.sync_client import SyncHttpClient
 from opencode_server_client.prompt.sync_submitter import PromptSubmitter
+from opencode_server_client.provider.sync_manager import ProviderManager
 from opencode_server_client.session.sync_manager import SessionManager
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,8 @@ logger = logging.getLogger(__name__)
 class OpencodeServerClient:
     """Main synchronous client for OpenCode server operations.
 
-    This client aggregates three layers:
+    This client aggregates four layers:
+    - ProviderManager: Query available providers and their models
     - SessionManager: Create, list, get, delete sessions
     - PromptSubmitter: Submit prompts with optional abort
     - EventSubscriber: Subscribe to real-time events via SSE
@@ -54,6 +56,7 @@ class OpencodeServerClient:
     "submit and wait for response".
 
     Attributes:
+        providers: ProviderManager instance
         sessions: SessionManager instance
         prompts: PromptSubmitter instance
         events: EventSubscriber instance
@@ -80,6 +83,7 @@ class OpencodeServerClient:
         self._http_client = SyncHttpClient(server_config, retry_config)
 
         # Create managers
+        self.providers = ProviderManager(self._http_client)
         self.sessions = SessionManager(self._http_client, default_directory)
         self.prompts = PromptSubmitter(self._http_client)
         self.events = EventSubscriber(self._http_client)
