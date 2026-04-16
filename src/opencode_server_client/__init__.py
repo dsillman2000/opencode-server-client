@@ -33,9 +33,11 @@ exponential backoff for transient failures.
 - `SessionIdleEvent`: Session became idle
 - `MessageUpdatedEvent`: Message content updated
 - `MessagePartUpdatedEvent`: Partial message update (streaming)
-- `SessionUpdatedEvent`: Session metadata updated (new)
-- `MessagePartDeltaEvent`: Incremental message part update (new)
+- `SessionUpdatedEvent`: Session metadata updated
+- `MessagePartDeltaEvent`: Incremental message part update
 - `SessionErrorEvent`: Error in session
+- `ServerHeartbeatEvent`: Server heartbeat (connection keep-alive)
+- `SessionDiffEvent`: Session state diff/changes
 
 **Type Definitions:**
 - Core data models for sessions, messages, events, and worktrees
@@ -77,6 +79,8 @@ from opencode_server_client.events import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatus,
@@ -140,6 +144,8 @@ __all__ = [
     "SessionUpdatedEvent",
     "MessagePartDeltaEvent",
     "SessionErrorEvent",
+    "ServerHeartbeatEvent",
+    "SessionDiffEvent",
     "SessionStatus",
     "AnyEvent",
     # Configuration

@@ -10,6 +10,8 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionUpdatedEvent,
@@ -435,3 +437,148 @@ class TestEventSubscriber(TestCase):
         self.assertEqual(on_session_updated_callback.call_count, 1)
         # on_part_delta should be called once
         self.assertEqual(on_part_delta_callback.call_count, 1)
+
+    def test_on_server_heartbeat_callback_invoked(self):
+        """Test on_server_heartbeat callback invoked for ServerHeartbeatEvent."""
+        heartbeat_callback = MagicMock()
+        self.subscriber.subscribe(on_server_heartbeat=heartbeat_callback)
+
+        event = ServerHeartbeatEvent(timestamp=datetime.now())
+
+        self.subscriber._dispatch_event(event)
+
+        heartbeat_callback.assert_called_once_with(event)
+
+    def test_on_session_diff_callback_invoked(self):
+        """Test on_session_diff callback invoked for SessionDiffEvent."""
+        diff_callback = MagicMock()
+        self.subscriber.subscribe(on_session_diff=diff_callback)
+
+        event = SessionDiffEvent(
+            session_id="abc123",
+            diff=[{"op": "add", "path": "/status", "value": "busy"}],
+            timestamp=datetime.now(),
+        )
+
+        self.subscriber._dispatch_event(event)
+
+        diff_callback.assert_called_once_with(event)
+
+    def test_on_session_diff_callback_invoked_with_empty_diff(self):
+        """Test on_session_diff callback invoked with empty diff list."""
+        diff_callback = MagicMock()
+        self.subscriber.subscribe(on_session_diff=diff_callback)
+
+        event = SessionDiffEvent(
+            session_id="xyz789",
+            diff=[],
+            timestamp=datetime.now(),
+        )
+
+        self.subscriber._dispatch_event(event)
+
+        diff_callback.assert_called_once_with(event)
+
+    def test_session_diff_with_filtering(self):
+        """Test SessionDiffEvent with session_id filtering."""
+        callback_filtered = MagicMock()
+        callback_all = MagicMock()
+
+        self.subscriber.subscribe(
+            on_session_diff=callback_filtered,
+            session_id_filter="session1",
+        )
+        self.subscriber.subscribe(on_session_diff=callback_all)
+
+        # Event for filtered session
+        event1 = SessionDiffEvent(
+            session_id="session1",
+            diff=[{"op": "add", "path": "/x", "value": "y"}],
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(event1)
+
+        # Event for different session
+        event2 = SessionDiffEvent(
+            session_id="session2",
+            diff=[{"op": "remove", "path": "/x"}],
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(event2)
+
+        # Filtered callback called once (only for matching session)
+        self.assertEqual(callback_filtered.call_count, 1)
+        # All callback called twice (for both events)
+        self.assertEqual(callback_all.call_count, 2)
+
+    def test_heartbeat_event_without_session_id(self):
+        """Test ServerHeartbeatEvent dispatch (doesn't have session_id)."""
+        callback = MagicMock()
+        self.subscriber.subscribe(on_event=callback)
+
+        event = ServerHeartbeatEvent(timestamp=datetime.now())
+
+        self.subscriber._dispatch_event(event)
+
+        # Generic callback should still be called
+        callback.assert_called_once_with(event)
+
+    def test_all_new_callbacks_registered_together(self):
+        """Test new callbacks can be registered with other callbacks."""
+        heartbeat_callback = MagicMock()
+        diff_callback = MagicMock()
+        on_event_callback = MagicMock()
+
+        self.subscriber.subscribe(
+            on_event=on_event_callback,
+            on_server_heartbeat=heartbeat_callback,
+            on_session_diff=diff_callback,
+        )
+
+        self.assertEqual(len(self.subscriber._subscriptions), 1)
+        subscription = self.subscriber._subscriptions[0]
+        self.assertEqual(subscription["on_server_heartbeat"], heartbeat_callback)
+        self.assertEqual(subscription["on_session_diff"], diff_callback)
+        self.assertEqual(subscription["on_event"], on_event_callback)
+
+    def test_mixed_new_and_old_callbacks_dispatch(self):
+        """Test all event types dispatched with new and old callbacks."""
+        on_heartbeat_callback = MagicMock()
+        on_diff_callback = MagicMock()
+        on_event_callback = MagicMock()
+        on_idle_callback = MagicMock()
+
+        self.subscriber.subscribe(
+            on_event=on_event_callback,
+            on_idle=on_idle_callback,
+            on_server_heartbeat=on_heartbeat_callback,
+            on_session_diff=on_diff_callback,
+        )
+
+        # Dispatch heartbeat event
+        heartbeat_event = ServerHeartbeatEvent(timestamp=datetime.now())
+        self.subscriber._dispatch_event(heartbeat_event)
+
+        # Dispatch idle event
+        idle_event = SessionIdleEvent(
+            session_id="abc123",
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(idle_event)
+
+        # Dispatch diff event
+        diff_event = SessionDiffEvent(
+            session_id="abc123",
+            diff=[],
+            timestamp=datetime.now(),
+        )
+        self.subscriber._dispatch_event(diff_event)
+
+        # on_event should be called for all three
+        self.assertEqual(on_event_callback.call_count, 3)
+        # on_idle should be called once
+        self.assertEqual(on_idle_callback.call_count, 1)
+        # on_heartbeat should be called once
+        self.assertEqual(on_heartbeat_callback.call_count, 1)
+        # on_diff should be called once
+        self.assertEqual(on_diff_callback.call_count, 1)

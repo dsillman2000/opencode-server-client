@@ -19,6 +19,8 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatus,
@@ -36,6 +38,8 @@ __all__ = [
     "SessionUpdatedEvent",
     "MessagePartDeltaEvent",
     "SessionErrorEvent",
+    "ServerHeartbeatEvent",
+    "SessionDiffEvent",
     "SessionStatus",
     "AnyEvent",
 ]

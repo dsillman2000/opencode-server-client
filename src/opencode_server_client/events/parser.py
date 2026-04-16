@@ -24,6 +24,8 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatusEvent,
@@ -44,10 +46,12 @@ class EventParser:
         - session.status: SessionStatusEvent
         - session.idle: SessionIdleEvent
         - session.updated: SessionUpdatedEvent
+        - session.diff: SessionDiffEvent
+        - session.error: SessionErrorEvent
+        - server.heartbeat: ServerHeartbeatEvent
         - message.updated: MessageUpdatedEvent
         - message.part.updated: MessagePartUpdatedEvent
         - message.part.delta: MessagePartDeltaEvent
-        - session.error: SessionErrorEvent
     """
 
     def parse(self, raw_sse_data: bytes) -> Optional[AnyEvent]:
@@ -198,12 +202,47 @@ class EventParser:
                 )
 
             elif event_type == "session.error":
+                # Handle both formats: error_message at top level or nested in error object
+                error_message = data.get("error_message")
+                error_code = data.get("error_code")
+                if not error_message and "error" in data:
+                    error_obj = data.get("error", {})
+                    if isinstance(error_obj, dict):
+                        error_message = error_obj.get("data", {}).get(
+                            "message"
+                        ) or error_obj.get("name")
+                        # Get error code from nested error object if not at top level
+                        if not error_code:
+                            error_code = error_obj.get("name")
+
+                if not error_message:
+                    raise ValueError(
+                        "Missing error_message: not found at top level or in error object"
+                    )
+
                 return SessionErrorEvent(
                     session_id=check_required("sessionID"),
-                    error_message=check_required("error_message"),
-                    error_code=data.get("error_code"),
+                    error_message=error_message,
+                    error_code=error_code,
                     timestamp=parse_timestamp(
                         data.get("timestamp", datetime.now().isoformat())
+                    ),
+                )
+
+            elif event_type == "server.heartbeat":
+                # Heartbeat events have no required data, just a timestamp
+                return ServerHeartbeatEvent(
+                    timestamp=parse_timestamp(
+                        data.get("time", datetime.now().isoformat())
+                    ),
+                )
+
+            elif event_type == "session.diff":
+                return SessionDiffEvent(
+                    session_id=check_required("sessionID"),
+                    diff=data.get("diff", []),
+                    timestamp=parse_timestamp(
+                        data.get("time", datetime.now().isoformat())
                     ),
                 )
 

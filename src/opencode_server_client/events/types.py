@@ -149,6 +149,32 @@ class SessionErrorEvent:
     timestamp: datetime = field(default_factory=datetime.now)
 
 
+@dataclass
+class ServerHeartbeatEvent:
+    """Heartbeat event sent by the server to keep connection alive.
+
+    Attributes:
+        timestamp: When the heartbeat was sent
+    """
+
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class SessionDiffEvent:
+    """Event indicating session state diff/changes.
+
+    Attributes:
+        session_id: ID of the session
+        diff: List of changes/diffs (can be empty)
+        timestamp: When the diff occurred
+    """
+
+    session_id: str
+    diff: list = field(default_factory=list)
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
 # Type alias for any event that could come from the SSE stream
 AnyEvent = Union[
     SessionStatusEvent,
@@ -158,4 +184,6 @@ AnyEvent = Union[
     MessagePartUpdatedEvent,
     MessagePartDeltaEvent,
     SessionErrorEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
 ]

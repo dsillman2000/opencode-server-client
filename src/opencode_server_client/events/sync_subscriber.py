@@ -37,6 +37,8 @@ from opencode_server_client.events.types import (
     AnyEvent,
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionUpdatedEvent,
@@ -97,6 +99,8 @@ class EventSubscriber:
             Callable[[MessagePartUpdatedEvent], None]
         ] = None,
         on_message_part_delta: Optional[Callable[[MessagePartDeltaEvent], None]] = None,
+        on_server_heartbeat: Optional[Callable[[ServerHeartbeatEvent], None]] = None,
+        on_session_diff: Optional[Callable[[SessionDiffEvent], None]] = None,
         session_id_filter: Optional[str] = None,
     ) -> None:
         """Register callbacks for events.
@@ -111,6 +115,8 @@ class EventSubscriber:
             on_session_updated: Callback for SessionUpdatedEvent only
             on_message_part_updated: Callback for MessagePartUpdatedEvent only
             on_message_part_delta: Callback for MessagePartDeltaEvent only
+            on_server_heartbeat: Callback for ServerHeartbeatEvent only
+            on_session_diff: Callback for SessionDiffEvent only
             session_id_filter: Optional session_id to filter events (if provided,
                 only events matching this session are processed)
 
@@ -118,6 +124,7 @@ class EventSubscriber:
             >>> subscriber.subscribe(
             ...     on_idle=lambda e: print(f"Session {e.session_id} idle"),
             ...     on_message_part_delta=lambda e: print(f"Got delta: {e.delta}"),
+            ...     on_server_heartbeat=lambda e: print("Server alive"),
             ...     session_id_filter="abc123"
             ... )
         """
@@ -130,6 +137,8 @@ class EventSubscriber:
                     "on_session_updated": on_session_updated,
                     "on_message_part_updated": on_message_part_updated,
                     "on_message_part_delta": on_message_part_delta,
+                    "on_server_heartbeat": on_server_heartbeat,
+                    "on_session_diff": on_session_diff,
                     "session_id_filter": session_id_filter,
                 }
             )
@@ -312,6 +321,16 @@ class EventSubscriber:
                         "on_message_part_delta"
                     ):
                         subscription["on_message_part_delta"](event)
+
+                    elif isinstance(event, ServerHeartbeatEvent) and subscription.get(
+                        "on_server_heartbeat"
+                    ):
+                        subscription["on_server_heartbeat"](event)
+
+                    elif isinstance(event, SessionDiffEvent) and subscription.get(
+                        "on_session_diff"
+                    ):
+                        subscription["on_session_diff"](event)
 
                 except Exception as e:
                     logger.error(f"Error in event callback: {e}", exc_info=True)

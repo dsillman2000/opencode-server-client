@@ -8,6 +8,8 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerHeartbeatEvent,
+    SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
     SessionStatusEvent,
@@ -211,3 +213,55 @@ class TestEventParser(TestCase):
 
         with self.assertRaises(ValueError):
             self.parser.parse(sse_data)
+
+    def test_parse_server_heartbeat_event(self):
+        """Test parsing ServerHeartbeatEvent from raw SSE."""
+        sse_data = b'{"directory": null, "payload": {"type": "server.heartbeat", "properties": {"timestamp": 1713177603000}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, ServerHeartbeatEvent)
+        self.assertIsInstance(event.timestamp, datetime)
+
+    def test_parse_server_heartbeat_event_with_empty_properties(self):
+        """Test parsing ServerHeartbeatEvent with empty properties."""
+        sse_data = b'{"directory": null, "payload": {"type": "server.heartbeat", "properties": {}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, ServerHeartbeatEvent)
+
+    def test_parse_session_diff_event(self):
+        """Test parsing SessionDiffEvent from raw SSE."""
+        sse_data = b'{"directory": null, "payload": {"type": "session.diff", "properties": {"sessionID": "abc123", "diff": [{"op": "add", "path": "/status", "value": "busy"}], "timestamp": 1713177604000}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, SessionDiffEvent)
+        self.assertEqual(event.session_id, "abc123")
+        self.assertEqual(len(event.diff), 1)
+        self.assertEqual(event.diff[0]["op"], "add")
+
+    def test_parse_session_diff_event_with_empty_diff(self):
+        """Test parsing SessionDiffEvent with empty diff list."""
+        sse_data = b'{"directory": null, "payload": {"type": "session.diff", "properties": {"sessionID": "xyz789", "diff": [], "timestamp": 1713177604000}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, SessionDiffEvent)
+        self.assertEqual(event.session_id, "xyz789")
+        self.assertEqual(event.diff, [])
+
+    def test_parse_session_diff_event_missing_session_id(self):
+        """Test SessionDiffEvent with missing sessionID raises error."""
+        sse_data = b'{"directory": null, "payload": {"type": "session.diff", "properties": {"diff": [], "timestamp": 1713177604000}}}'
+
+        with self.assertRaises(ValueError):
+            self.parser.parse(sse_data)
+
+    def test_parse_session_error_event_with_nested_error_object(self):
+        """Test parsing SessionErrorEvent with nested error object (new format)."""
+        sse_data = b'{"directory": null, "payload": {"type": "session.error", "properties": {"sessionID": "abc123", "error": {"name": "TimeoutError", "data": {"message": "Request timed out"}}, "timestamp": 1713177605000}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, SessionErrorEvent)
+        self.assertEqual(event.session_id, "abc123")
+        self.assertEqual(event.error_message, "Request timed out")
+        self.assertEqual(event.error_code, "TimeoutError")
+        self.assertIsInstance(event.timestamp, datetime)
