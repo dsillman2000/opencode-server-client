@@ -1,42 +1,75 @@
 ## Context
 
-Layer 1 provides reliable HTTP communication with automatic retry. Now we need to build session management on top of it. The OpenCode server exposes session endpoints at `/session` (CRUD), `/session/{id}` (get/update), `/session/status` (status check), and `/session/{id}/prompt_async` (prompt submission). This layer encapsulates these patterns into easy-to-use classes.
+Layer 1 provides reliable HTTP communication with automatic retry. Now we need to build session management on top of it backed by real-time events. The OpenCode server exposes SSE at `/global/event` for real-time updates and session endpoints at `/session` (CRUD), `/session/{id}` (get/update). This layer encapsulates SSE event subscription patterns and session operations into easy-to-use classes, supporting concurrent/real-time workflows without polling overhead.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Provide clean, discoverable sync API for session management
 - Support creating, listing, getting, and deleting sessions
-- Enable status polling to track session progress (idle/busy/retry states)
+- Enable event-driven status tracking via SSE (no polling)
 - Support prompt submission with optional abort-before-submit
-- Provide response tracking (fetch messages, poll until idle)
-- Create high-level main client that combines all operations
-- Enable convenient workflows like "submit and wait for response"
+- Provide real-time response tracking via SSE message events
+- Enable event subscription for advanced concurrent workflows
+- Create high-level main client that combines session and event operations
+- Enable convenient workflows like "submit and wait for response" via events
+- Abstract away threading complexity for sync users while providing raw event access for power users
 
 **Non-Goals:**
 - Session sharing/unsharing (Layer 5)
 - Worktree management (separate manager)
-- Event streaming (Layer 4)
 - Async/await variants (Layer 3)
 - Child sessions / session hierarchy details (defer)
+- Local caching or state management (stateless event relay)
 
 ## Decisions
 
 ### Decision 1: Manager Pattern for Organization
 
-**Choice:** Create separate manager classes (`SessionManager`, `PromptSubmitter`, `ResponsePoller`) that are composed into main `OpencodeServerClient`
+**Choice:** Create separate manager classes (`SessionManager`, `PromptSubmitter`, `EventSubscriber`) that are composed into main `OpencodeServerClient`
 
 **Rationale:**
 - Keeps concerns separated and discoverable
 - Easier to test individual managers
 - Allows users to access specific managers directly if needed
 - Mirrors common UI library patterns (router, state, etc.)
+- SessionManager handles CRUD; EventSubscriber handles SSE; they're orthogonal concerns
 
 **Alternatives Considered:**
 - Single monolithic client: Too many methods; hard to discover
 - Flat functions: Lose access to shared state and configuration
 
-### Decision 2: Directory as Optional Everywhere
+### Decision 2: SSE as Primary Event Source
+
+**Choice:** Use `/global/event` SSE stream as primary mechanism for tracking session status and messages; no polling fallback
+
+**Rationale:**
+- Concurrent/real-time is the primary use case
+- SSE eliminates unnecessary server load from polling
+- Real-time updates enable responsive user interfaces
+- Layer 1 HTTP client retries transient SSE errors automatically
+- Foundation for both sync and async APIs
+
+**Alternatives Considered:**
+- Polling with optional SSE: Adds complexity; two code paths
+- Only polling: Doesn't meet concurrency goals; creates server load
+
+### Decision 3: Background Thread for Sync Event Handling
+
+**Choice:** EventSubscriber uses background thread to read SSE; callbacks invoked in thread context
+
+**Rationale:**
+- Sync code doesn't have asyncio event loop running
+- Thread-based approach allows sync code to remain blocking
+- Callbacks can be simple functions; no async/await required
+- Users can still write sync code naturally
+
+**Alternatives Considered:**
+- AsyncIO.run() for sync context: Pollutes global event loop; fragile
+- Blocking HTTP calls only: Can't support concurrent subscriptions
+- No threading: Can't provide event-driven experience in sync
+
+### Decision 4: Directory as Optional Everywhere
 
 **Choice:** Accept `directory` as optional parameter on every operation; use client default if not provided
 
@@ -49,61 +82,52 @@ Layer 1 provides reliable HTTP communication with automatic retry. Now we need t
 - Require directory always: Would complicate single-project use
 - Only at client level: Would prevent per-operation override
 
-### Decision 3: Status Polling with Timeout
+### Decision 5: Event-Driven Wait Pattern
 
-**Choice:** `wait_for_idle()` method with configurable timeout and poll_interval; returns bool (success/timeout)
-
-**Rationale:**
-- Timeout prevents infinite waits
-- Poll interval tradeoff between latency and load
-- Returns bool for simple conditional logic
-- Raised exceptions (SessionNotFound) for hard errors
-
-**Alternatives Considered:**
-- Raise TimeoutError: Less convenient for common case
-- No timeout: Risky for long-running processes
-
-### Decision 4: Abort Flag on Prompt Submission
-
-**Choice:** `submit_prompt(..., abort=True)` parameter; if True, calls `/abort` before submitting
+**Choice:** `submit_and_wait()` internally subscribes to events; doesn't expose raw polling loops
 
 **Rationale:**
-- User explicitly controls whether to abort
-- Atomic operation (abort then submit in quick succession)
-- Matches user intent: "abort and try again with new prompt"
+- Simpler API for common use case
+- Users don't need to understand threading/subscription mechanics
+- Still allows power users to subscribe directly for fine-grained control
 
 **Alternatives Considered:**
-- Separate `abort_then_submit()` method: More verbose
-- Always abort: Destructive default
+- Only expose low-level subscriptions: Requires users to write threading code
+- Only high-level convenience method: Loses flexibility for concurrent workflows
 
-### Decision 5: Combined Submit+Wait Convenience Method
+### Decision 6: Shared Event Types Across Sync/Async
 
-**Choice:** `OpencodeServerClient.submit_prompt_and_wait()` combines submit and polling
+**Choice:** Define event types (SessionStatusEvent, MessageUpdatedEvent, etc.) in shared module; both sync and async use same types
 
 **Rationale:**
-- Common workflow deserves ergonomic support
-- Reduces boilerplate for typical use cases
-- Still allows fine-grained control via separate methods
+- Avoids code duplication
+- Makes it easy to migrate from sync to async (same event types)
+- EventParser can be used by both sync and async layers
+- Reduces cognitive load: one event model, not sync and async variants
 
 **Alternatives Considered:**
-- Only expose low-level ops: Makes common case tedious
+- Separate event types per sync/async: Wastes code; confusing for users
+- Sync uses dicts, async uses types: Inconsistent experience
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |------|-----------|
-| **Polling inefficiency**: Constant polling of /session/status could create load | Document poll_interval tuning; recommend SSE for high-frequency cases; start with 0.5s default |
-| **Race conditions**: Session state may change between operations | Use SSE for real-time tracking (Layer 4); polling is eventual-consistency |
-| **Directory context loss**: Forgetting to pass directory could operate on wrong project | Document in API; add verbose error messages; consider warnings in logging |
-| **Long-running waits**: Timeout could be too short for complex prompts | Make timeout configurable; default to 5 minutes; document tuning |
+| **Threading complexity**: Background thread may confuse sync users | Document thread safety; provide `submit_and_wait()` convenience method; warn about callback context in docstrings |
+| **SSE connection loss**: Network disruption could break stream | HTTP client retries transient errors; fatal errors trigger error_handler callback; user can reconnect |
+| **Event order guarantees**: SSE may reorder or lose events | Document eventual-consistency model; events are notifications, not transactions |
+| **GIL contention**: Callback code running in thread could slow down main thread | Document that callbacks should be quick; provide async event subscriber for compute-heavy workflows |
+| **Subscription overhead**: Many concurrent subscriptions could create load | One SSE stream per client can multiplex many sessions; document recommended subscription patterns |
 
 ## Migration Plan
 
-This is the first sync session API; no migration needed. Async variant (Layer 3) will follow with parallel API.
+This is the first sync session API backed by events; no migration needed. Sync users will choose between raw subscription API (for concurrent workflows) or convenience methods (for simple blocking workflows).
 
 ## Open Questions
 
-1. Should session creation validate that directory exists before creating session?
-2. Should we cache session status locally or always fetch fresh?
-3. What's the recommended timeout for typical prompts? (5 min? 10 min?)
-4. Should we add session "reload" method to refresh metadata without polling?
+1. What is the exact schema of events from `/global/event`? (session.status, message.updated, etc.)
+2. Should EventSubscriber support filtering by session_id at subscription time, or always receive all events?
+3. What's the recommended error_handler behavior - should it log, raise, or just count?
+4. Should session.get() fetch fresh metadata, or can it return cached data from events?
+5. Should we buffer events during reconnection, or just stream live?
+
