@@ -180,3 +180,55 @@ class TestPromptSubmitter(TestCase):
 
         args, kwargs = self.mock_http_client.post.call_args
         self.assertEqual(kwargs.get("directory"), "/custom/dir")
+
+    def test_submit_prompt_with_provider_and_model_id(self):
+        """Test submit_prompt() with provider_id and model_id."""
+        self.mock_http_client.post.return_value.json.return_value = {
+            "message_id": "msg123",
+        }
+
+        result = self.submitter.submit_prompt(
+            session_id="abc123",
+            text="Hello",
+            provider_id="nvidia",
+            model_id="nim",
+        )
+
+        args, kwargs = self.mock_http_client.post.call_args
+        self.assertIn("model", kwargs["json"])
+        self.assertEqual(kwargs["json"]["model"]["providerID"], "nvidia")
+        self.assertEqual(kwargs["json"]["model"]["modelID"], "nim")
+
+    def test_submit_prompt_with_provider_id_only(self):
+        """Test submit_prompt() with provider_id only."""
+        self.mock_http_client.post.return_value.json.return_value = {
+            "message_id": "msg123",
+        }
+
+        result = self.submitter.submit_prompt(
+            session_id="abc123",
+            text="Hello",
+            provider_id="openai",
+        )
+
+        args, kwargs = self.mock_http_client.post.call_args
+        self.assertIn("model", kwargs["json"])
+        self.assertEqual(kwargs["json"]["model"]["providerID"], "openai")
+        self.assertNotIn("modelID", kwargs["json"]["model"])
+
+    def test_submit_prompt_with_model_id_only(self):
+        """Test submit_prompt() with model_id only."""
+        self.mock_http_client.post.return_value.json.return_value = {
+            "message_id": "msg123",
+        }
+
+        result = self.submitter.submit_prompt(
+            session_id="abc123",
+            text="Hello",
+            model_id="gpt-4",
+        )
+
+        args, kwargs = self.mock_http_client.post.call_args
+        self.assertIn("model", kwargs["json"])
+        self.assertEqual(kwargs["json"]["model"]["modelID"], "gpt-4")
+        self.assertNotIn("providerID", kwargs["json"]["model"])

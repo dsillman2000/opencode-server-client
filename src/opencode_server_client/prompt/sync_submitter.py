@@ -9,6 +9,8 @@ Typical usage:
     >>> result = submitter.submit_prompt(
     ...     session_id="abc123",
     ...     text="What is the file structure?",
+    ...     provider_id="nvidia",
+    ...     model_id="nim",
     ...     abort=True  # abort current processing first
     ... )
     >>> print(f"Message ID: {result['message_id']}")
@@ -51,6 +53,8 @@ class PromptSubmitter:
         agent: Optional[str] = None,
         system_prompt: Optional[str] = None,
         tools: Optional[Dict[str, Any]] = None,
+        provider_id: Optional[str] = None,
+        model_id: Optional[str] = None,
         abort: bool = False,
         directory: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -63,6 +67,8 @@ class PromptSubmitter:
             agent: Optional agent name/config
             system_prompt: Optional system prompt override
             tools: Optional tools configuration
+            provider_id: Optional provider ID (e.g., "nvidia", "openai")
+            model_id: Optional model ID (e.g., "nim", "gpt-4")
             abort: If True, abort session before submitting (default: False)
             directory: Optional directory context
 
@@ -97,6 +103,12 @@ class PromptSubmitter:
             payload["system_prompt"] = system_prompt
         if tools:
             payload["tools"] = tools
+        if provider_id or model_id:
+            payload["model"] = {}
+            if provider_id:
+                payload["model"]["providerID"] = provider_id
+            if model_id:
+                payload["model"]["modelID"] = model_id
 
         try:
             response = self.http_client.post(
