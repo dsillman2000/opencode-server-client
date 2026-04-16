@@ -3,9 +3,7 @@
 import unittest
 from unittest.mock import Mock
 
-from opencode_server_client.config import ServerConfig  # ruff: noqa F401
 from opencode_server_client.provider.sync_manager import ProviderManager
-from opencode_server_client.provider.types import ModelCost  # ruff: noqa F401
 from opencode_server_client.provider.types import (
     InputCapabilities,
     Model,
