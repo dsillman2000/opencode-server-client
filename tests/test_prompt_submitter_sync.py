@@ -143,7 +143,9 @@ class TestPromptSubmitter(TestCase):
         )
 
         # Should have two POST calls: abort + submit
-        post_calls = [c for c in self.mock_http_client.method_calls if "post" in str(c).lower()]
+        post_calls = [
+            c for c in self.mock_http_client.method_calls if "post" in str(c).lower()
+        ]
         # Check that both calls were made (order: abort first, then submit)
         self.assertGreaterEqual(len(post_calls), 2)
 
@@ -159,7 +161,9 @@ class TestPromptSubmitter(TestCase):
 
     def test_abort_session_not_found(self):
         """Test abort_session() with 404 error."""
-        self.mock_http_client.post.return_value.raise_for_status.side_effect = Exception("404 Not Found")
+        self.mock_http_client.post.return_value.raise_for_status.side_effect = (
+            Exception("404 Not Found")
+        )
 
         with self.assertRaises(Exception):
             self.submitter.abort_session(session_id="nonexistent")

@@ -1,10 +1,12 @@
-import json
+import os
 from time import sleep
 
 from opencode_server_client import OpencodeServerClient, RetryConfig, ServerConfig
 
 if __name__ == "__main__":
-    config = ServerConfig(base_url="http://localhost:9000", basic_auth=("opencode", "***REMOVED***"))
+    opencode_user = "opencode"
+    opencode_pass = os.getenv("OPENCODE_PASSWORD", "password")
+    config = ServerConfig(base_url="http://localhost:9000", basic_auth=(opencode_user, opencode_pass))
     retry = RetryConfig(max_retries=3)
 
     client = OpencodeServerClient(config, retry, "/home/dsillman2000/python-projects/opencode-server-client")

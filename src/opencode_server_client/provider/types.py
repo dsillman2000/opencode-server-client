@@ -36,7 +36,9 @@ class ModelCapabilities:
 
     def has_text_io(self) -> bool:
         """Check if model supports text input and output."""
-        return (self.input and self.input.text is True) and (self.output and self.output.text is True)
+        return (self.input and self.input.text is True) and (
+            self.output and self.output.text is True
+        )
 
     def has_toolcall(self) -> bool:
         """Check if model supports tool calls."""
@@ -70,8 +72,14 @@ class Model:
         input_data = capabilities_data.get("input", {})
         output_data = capabilities_data.get("output", {})
 
-        input_caps = InputCapabilities(text=input_data.get("text") if isinstance(input_data, dict) else input_data)
-        output_caps = OutputCapabilities(text=output_data.get("text") if isinstance(output_data, dict) else output_data)
+        input_caps = InputCapabilities(
+            text=input_data.get("text") if isinstance(input_data, dict) else input_data
+        )
+        output_caps = OutputCapabilities(
+            text=output_data.get("text")
+            if isinstance(output_data, dict)
+            else output_data
+        )
 
         capabilities = ModelCapabilities(
             input=input_caps,
@@ -81,7 +89,11 @@ class Model:
         )
 
         cost_data = data.get("cost", {})
-        cost = ModelCost(input=cost_data.get("input"), output=cost_data.get("output")) if cost_data else None
+        cost = (
+            ModelCost(input=cost_data.get("input"), output=cost_data.get("output"))
+            if cost_data
+            else None
+        )
 
         return cls(id=data["id"], capabilities=capabilities, cost=cost)
 
@@ -111,7 +123,9 @@ class Provider:
 
     def list_text_capable_models(self) -> list[Model]:
         """Get all models that support text input/output."""
-        return [model for model in self.models.values() if model.capabilities.has_text_io()]
+        return [
+            model for model in self.models.values() if model.capabilities.has_text_io()
+        ]
 
     def list_models_with_capabilities(
         self,
