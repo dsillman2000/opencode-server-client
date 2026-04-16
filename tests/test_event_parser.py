@@ -1,6 +1,5 @@
 """Tests for EventParser - converting raw SSE to typed events."""
 
-import json
 from datetime import datetime
 from unittest import TestCase
 

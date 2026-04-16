@@ -30,7 +30,6 @@ Typical usage:
 
 import logging
 import threading
-import time
 from typing import Callable, Optional
 
 from opencode_server_client.events.parser import EventParser
@@ -38,9 +37,6 @@ from opencode_server_client.events.types import (
     AnyEvent,
     SessionErrorEvent,
     SessionIdleEvent,
-    SessionStatusEvent,
-    MessageUpdatedEvent,
-    MessagePartUpdatedEvent,
 )
 from opencode_server_client.http_client.sync_client import SyncHttpClient
 

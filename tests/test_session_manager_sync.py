@@ -1,9 +1,11 @@
 """Tests for SessionManager - CRUD operations on sessions."""
 
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from opencode_server_client.session.sync_manager import SessionManager
+
+# ruff: noqa F841
 
 
 class TestSessionManager(TestCase):
@@ -12,9 +14,7 @@ class TestSessionManager(TestCase):
     def setUp(self):
         """Set up mock HTTP client for tests."""
         self.mock_http_client = MagicMock()
-        self.manager = SessionManager(
-            self.mock_http_client, default_directory="/default/dir"
-        )
+        self.manager = SessionManager(self.mock_http_client, default_directory="/default/dir")
 
     def test_create_minimal_params(self):
         """Test create() with minimal parameters."""
@@ -57,9 +57,7 @@ class TestSessionManager(TestCase):
 
     def test_create_with_error(self):
         """Test create() handles errors gracefully."""
-        self.mock_http_client.post.return_value.raise_for_status.side_effect = (
-            Exception("400 Bad Request")
-        )
+        self.mock_http_client.post.return_value.raise_for_status.side_effect = Exception("400 Bad Request")
 
         with self.assertRaises(Exception):
             self.manager.create()
@@ -112,9 +110,7 @@ class TestSessionManager(TestCase):
 
     def test_get_not_found(self):
         """Test get() with 404 error."""
-        self.mock_http_client.get.return_value.raise_for_status.side_effect = Exception(
-            "404 Not Found"
-        )
+        self.mock_http_client.get.return_value.raise_for_status.side_effect = Exception("404 Not Found")
 
         with self.assertRaises(Exception):
             self.manager.get("nonexistent")
@@ -131,9 +127,7 @@ class TestSessionManager(TestCase):
 
     def test_delete_not_found(self):
         """Test delete() with 404 error."""
-        self.mock_http_client.delete.return_value.raise_for_status.side_effect = (
-            Exception("404 Not Found")
-        )
+        self.mock_http_client.delete.return_value.raise_for_status.side_effect = Exception("404 Not Found")
 
         with self.assertRaises(Exception):
             self.manager.delete("nonexistent")

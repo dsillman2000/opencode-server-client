@@ -1,10 +1,12 @@
 """Tests for OpencodeServerClient - main synchronous client."""
 
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from opencode_server_client.client_sync import OpencodeServerClient
 from opencode_server_client.config import ServerConfig
+
+# ruff: noqa F841
 
 
 class TestOpencodeServerClient(TestCase):
@@ -96,8 +98,9 @@ class TestOpencodeServerClient(TestCase):
                 # Simulate idle event immediately
                 def trigger_callbacks(on_event=None, on_idle=None, **kwargs):
                     if on_idle:
-                        from opencode_server_client.events.types import SessionIdleEvent
                         from datetime import datetime
+
+                        from opencode_server_client.events.types import SessionIdleEvent
 
                         on_idle(
                             SessionIdleEvent(

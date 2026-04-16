@@ -27,7 +27,6 @@ Typical usage:
 
 import logging
 import threading
-import time
 from typing import Any, Callable, Dict, List, Optional
 
 from opencode_server_client.config import RetryConfig, ServerConfig

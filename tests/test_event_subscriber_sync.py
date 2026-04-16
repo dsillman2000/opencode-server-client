@@ -1,6 +1,5 @@
 """Tests for EventSubscriber - sync SSE event subscription with background thread."""
 
-import threading
 import time
 from datetime import datetime
 from unittest import TestCase
