@@ -180,12 +180,12 @@ class EventSubscriber:
                 )
 
                 # Build full URL for the SSE endpoint
-                base_url = self.http_client.config.base_url
+                base_url = self.http_client.server_config.base_url
                 sse_url = f"{base_url}/global/event"
 
                 # Create a new httpx.Client for the SSE connection
                 with httpx.Client(
-                    timeout=self.http_client.config.timeout or 30.0
+                    timeout=self.http_client.server_config.timeout or 30.0
                 ) as client:
                     # Connect to SSE stream using httpx-sse
                     with connect_sse(client, "GET", sse_url) as event_source:
