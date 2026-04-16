@@ -57,7 +57,7 @@ class PromptSubmitter:
         model_id: Optional[str] = None,
         abort: bool = False,
         directory: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> str:
         """Submit a prompt to a session.
 
         Args:
@@ -73,7 +73,7 @@ class PromptSubmitter:
             directory: Optional directory context
 
         Returns:
-            Response dict with message_id and other metadata
+            (str) The ID of the submitted message.
 
         Raises:
             PromptSubmissionError: If submission fails
@@ -81,7 +81,7 @@ class PromptSubmitter:
         """
         # Generate message_id if not provided
         if not message_id:
-            message_id = str(uuid.uuid4())
+            message_id = "msg_" + str(uuid.uuid4())
 
         # Abort first if requested
         if abort:
@@ -93,8 +93,8 @@ class PromptSubmitter:
 
         # Build the payload
         payload = {
-            "text": text,
-            "message_id": message_id,
+            "parts": [{"type": "text", "text": text, "id": "prt_" + str(uuid.uuid4())}],
+            "messageID": message_id,
         }
 
         if agent:
@@ -114,10 +114,11 @@ class PromptSubmitter:
             response = self.http_client.post(
                 f"/session/{session_id}/prompt_async",
                 json=payload,
-                directory=directory,
+                # directory=directory,
             )
             response.raise_for_status()
-            return response.json()
+            # Should raise a 204 No Content if successful.
+            return message_id
         except Exception as e:
             logger.error(f"Failed to submit prompt to session {session_id}: {e}")
             raise

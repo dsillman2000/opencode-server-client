@@ -6,7 +6,7 @@ in the background thread context.
 
 The EventSubscriber:
 - Manages background thread for reading SSE stream
-- Parses SSE events to typed objects
+- Parses SSE events to typed objects using httpx-sse
 - Invokes user callbacks for matched events
 - Handles reconnection with exponential backoff
 - Supports session_id filtering
@@ -31,6 +31,9 @@ Typical usage:
 import logging
 import threading
 from typing import Callable, Optional
+
+import httpx
+from httpx_sse import connect_sse
 
 from opencode_server_client.events.parser import EventParser
 from opencode_server_client.events.types import (
@@ -163,9 +166,9 @@ class EventSubscriber:
         """Background thread: Read SSE stream and dispatch events.
 
         This method runs in the background thread and:
-        1. Connects to /global/event endpoint
-        2. Reads SSE data line by line
-        3. Parses events using EventParser
+        1. Connects to /global/event endpoint using httpx-sse
+        2. Reads SSE events using proper SSE parsing
+        3. Parses event data using EventParser
         4. Invokes matching callbacks
         5. Handles reconnection on errors
         """
@@ -176,35 +179,38 @@ class EventSubscriber:
                     f"Connecting to SSE stream (attempt {self._reconnect_attempt})"
                 )
 
-                # Connect with stream=True to get line-by-line response
-                response = self.http_client.get(
-                    "/global/event",
-                    stream=True,
-                )
-                response.raise_for_status()
+                # Build full URL for the SSE endpoint
+                base_url = self.http_client.config.base_url
+                sse_url = f"{base_url}/global/event"
 
-                # Reset reconnect attempt counter on successful connection
-                self._reconnect_attempt = 0
+                # Create a new httpx.Client for the SSE connection
+                with httpx.Client(
+                    timeout=self.http_client.config.timeout or 30.0
+                ) as client:
+                    # Connect to SSE stream using httpx-sse
+                    with connect_sse(client, "GET", sse_url) as event_source:
+                        # Reset reconnect attempt counter on successful connection
+                        self._reconnect_attempt = 0
 
-                # Read SSE stream
-                for line in response.iter_lines():
-                    if self._stop_event.is_set():
-                        break
+                        # Read SSE events
+                        for sse in event_source.iter_sse():
+                            if self._stop_event.is_set():
+                                break
 
-                    if not line:
-                        continue
+                            if not sse.data:
+                                continue
 
-                    try:
-                        # Parse the event
-                        event = self._parser.parse(line.encode("utf-8"))
+                            try:
+                                # Parse the event data
+                                event = self._parser.parse(sse.data.encode("utf-8"))
 
-                        if event:
-                            # Dispatch to matching callbacks
-                            self._dispatch_event(event)
+                                if event:
+                                    # Dispatch to matching callbacks
+                                    self._dispatch_event(event)
 
-                    except Exception as e:
-                        logger.error(f"Error parsing SSE event: {e}")
-                        continue
+                            except Exception as e:
+                                logger.error(f"Error parsing SSE event: {e}")
+                                continue
 
                 logger.debug("SSE stream ended normally")
 

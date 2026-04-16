@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
-dependencies = ["httpx>=0.28.1"]
+dependencies = [
+    "httpx>=0.28.1",
+    "httpx-sse>=0.4.3",
+]
 
 
 [tool.hatch.version]

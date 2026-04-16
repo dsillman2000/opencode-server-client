@@ -12,6 +12,14 @@ if __name__ == "__main__":
     retry = RetryConfig(max_retries=3)
 
     client = OpencodeServerClient(config, retry, "/home/dsillman2000/python-projects/opencode-server-client")
+    client.events.subscribe(
+        on_event=lambda e: print(f"Received event: {json.dumps(e)}"),
+    )
     sessions = client.list_all_sessions()
-
-    print(json.dumps(sessions, indent=2))
+    # message_id = client.prompts.submit_prompt(
+    #     session_id="ses_26c29fca0ffeNAaszJjrDAn8bw",
+    #     text="What is the mass of the sun?",
+    #     agent="build",
+    #     provider_id="nvidia",
+    #     model_id="z-ai/glm5",
+    # )
