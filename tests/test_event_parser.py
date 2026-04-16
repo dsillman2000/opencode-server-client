@@ -8,6 +8,7 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerConnectedEvent,
     ServerHeartbeatEvent,
     SessionDiffEvent,
     SessionErrorEvent,
@@ -265,3 +266,18 @@ class TestEventParser(TestCase):
         self.assertEqual(event.error_message, "Request timed out")
         self.assertEqual(event.error_code, "TimeoutError")
         self.assertIsInstance(event.timestamp, datetime)
+
+    def test_parse_server_connected_event(self):
+        """Test parsing ServerConnectedEvent from raw SSE."""
+        sse_data = b'{"directory": null, "payload": {"type": "server.connected", "properties": {"timestamp": 1713177606000}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, ServerConnectedEvent)
+        self.assertIsInstance(event.timestamp, datetime)
+
+    def test_parse_server_connected_event_with_empty_properties(self):
+        """Test parsing ServerConnectedEvent with empty properties."""
+        sse_data = b'{"directory": null, "payload": {"type": "server.connected", "properties": {}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, ServerConnectedEvent)

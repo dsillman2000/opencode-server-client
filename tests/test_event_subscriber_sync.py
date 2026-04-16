@@ -10,6 +10,7 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerConnectedEvent,
     ServerHeartbeatEvent,
     SessionDiffEvent,
     SessionErrorEvent,
@@ -582,3 +583,71 @@ class TestEventSubscriber(TestCase):
         self.assertEqual(on_heartbeat_callback.call_count, 1)
         # on_diff should be called once
         self.assertEqual(on_diff_callback.call_count, 1)
+
+    def test_on_server_connected_callback_invoked(self):
+        """Test on_server_connected callback invoked for ServerConnectedEvent."""
+        connected_callback = MagicMock()
+        self.subscriber.subscribe(on_server_connected=connected_callback)
+
+        event = ServerConnectedEvent(timestamp=datetime.now())
+
+        self.subscriber._dispatch_event(event)
+
+        connected_callback.assert_called_once_with(event)
+
+    def test_server_connected_without_session_id(self):
+        """Test ServerConnectedEvent dispatch (doesn't have session_id)."""
+        callback = MagicMock()
+        self.subscriber.subscribe(on_event=callback)
+
+        event = ServerConnectedEvent(timestamp=datetime.now())
+
+        self.subscriber._dispatch_event(event)
+
+        # Generic callback should still be called
+        callback.assert_called_once_with(event)
+
+    def test_all_server_events_callbacks_registered(self):
+        """Test all server event callbacks can be registered together."""
+        heartbeat_callback = MagicMock()
+        connected_callback = MagicMock()
+        on_event_callback = MagicMock()
+
+        self.subscriber.subscribe(
+            on_event=on_event_callback,
+            on_server_heartbeat=heartbeat_callback,
+            on_server_connected=connected_callback,
+        )
+
+        self.assertEqual(len(self.subscriber._subscriptions), 1)
+        subscription = self.subscriber._subscriptions[0]
+        self.assertEqual(subscription["on_server_heartbeat"], heartbeat_callback)
+        self.assertEqual(subscription["on_server_connected"], connected_callback)
+        self.assertEqual(subscription["on_event"], on_event_callback)
+
+    def test_server_connected_and_heartbeat_dispatch(self):
+        """Test ServerConnectedEvent and ServerHeartbeatEvent dispatched together."""
+        on_connected_callback = MagicMock()
+        on_heartbeat_callback = MagicMock()
+        on_event_callback = MagicMock()
+
+        self.subscriber.subscribe(
+            on_event=on_event_callback,
+            on_server_connected=on_connected_callback,
+            on_server_heartbeat=on_heartbeat_callback,
+        )
+
+        # Dispatch connected event
+        connected_event = ServerConnectedEvent(timestamp=datetime.now())
+        self.subscriber._dispatch_event(connected_event)
+
+        # Dispatch heartbeat event
+        heartbeat_event = ServerHeartbeatEvent(timestamp=datetime.now())
+        self.subscriber._dispatch_event(heartbeat_event)
+
+        # on_event should be called for both
+        self.assertEqual(on_event_callback.call_count, 2)
+        # on_connected should be called once
+        self.assertEqual(on_connected_callback.call_count, 1)
+        # on_heartbeat should be called once
+        self.assertEqual(on_heartbeat_callback.call_count, 1)

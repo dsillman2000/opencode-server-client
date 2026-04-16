@@ -175,6 +175,17 @@ class SessionDiffEvent:
     timestamp: datetime = field(default_factory=datetime.now)
 
 
+@dataclass
+class ServerConnectedEvent:
+    """Server connection established event.
+
+    Attributes:
+        timestamp: When the connection was established
+    """
+
+    timestamp: datetime = field(default_factory=datetime.now)
+
+
 # Type alias for any event that could come from the SSE stream
 AnyEvent = Union[
     SessionStatusEvent,
@@ -186,4 +197,5 @@ AnyEvent = Union[
     SessionErrorEvent,
     ServerHeartbeatEvent,
     SessionDiffEvent,
+    ServerConnectedEvent,
 ]

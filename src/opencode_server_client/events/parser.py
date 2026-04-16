@@ -24,6 +24,7 @@ from opencode_server_client.events.types import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerConnectedEvent,
     ServerHeartbeatEvent,
     SessionDiffEvent,
     SessionErrorEvent,
@@ -49,6 +50,7 @@ class EventParser:
         - session.diff: SessionDiffEvent
         - session.error: SessionErrorEvent
         - server.heartbeat: ServerHeartbeatEvent
+        - server.connected: ServerConnectedEvent
         - message.updated: MessageUpdatedEvent
         - message.part.updated: MessagePartUpdatedEvent
         - message.part.delta: MessagePartDeltaEvent
@@ -241,6 +243,14 @@ class EventParser:
                 return SessionDiffEvent(
                     session_id=check_required("sessionID"),
                     diff=data.get("diff", []),
+                    timestamp=parse_timestamp(
+                        data.get("time", datetime.now().isoformat())
+                    ),
+                )
+
+            elif event_type == "server.connected":
+                # Server connected event has no required data, just a timestamp
+                return ServerConnectedEvent(
                     timestamp=parse_timestamp(
                         data.get("time", datetime.now().isoformat())
                     ),

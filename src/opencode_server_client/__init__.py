@@ -37,6 +37,7 @@ exponential backoff for transient failures.
 - `MessagePartDeltaEvent`: Incremental message part update
 - `SessionErrorEvent`: Error in session
 - `ServerHeartbeatEvent`: Server heartbeat (connection keep-alive)
+- `ServerConnectedEvent`: Server connection established
 - `SessionDiffEvent`: Session state diff/changes
 
 **Type Definitions:**
@@ -79,6 +80,7 @@ from opencode_server_client.events import (
     MessagePartDeltaEvent,
     MessagePartUpdatedEvent,
     MessageUpdatedEvent,
+    ServerConnectedEvent,
     ServerHeartbeatEvent,
     SessionDiffEvent,
     SessionErrorEvent,
@@ -145,6 +147,7 @@ __all__ = [
     "MessagePartDeltaEvent",
     "SessionErrorEvent",
     "ServerHeartbeatEvent",
+    "ServerConnectedEvent",
     "SessionDiffEvent",
     "SessionStatus",
     "AnyEvent",
