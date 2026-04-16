@@ -1,21 +1,33 @@
 # prompt-submission-sync Specification
 
 ## Purpose
-TBD - created by archiving change sync-session-api. Update Purpose after archive.
+Define requirements for synchronous prompt submission to OpenCode sessions, including support for specifying AI providers and models, managing prompt metadata, and coordinating session abortion with prompt submission.
 ## Requirements
 ### Requirement: Submit Prompt to Session
 The system SHALL allow users to submit a prompt to a session for processing.
 
 #### Scenario: Submit simple text prompt
-- **WHEN** user calls `PromptSubmitter.submit_prompt(session_id="sess-123", prompt_text="What is 2+2?", model={providerID: "nvidia", modelID: "nim"})`
-- **THEN** system POSTs to `/session/sess-123/prompt_async` with text part and returns message_id
+- **WHEN** user calls `PromptSubmitter.submit_prompt(session_id="sess-123", text="What is 2+2?", provider_id="nvidia", model_id="nim")`
+- **THEN** system POSTs to `/session/sess-123/prompt_async` with text and model parameters, returns message_id
+
+#### Scenario: Prompt submission with provider ID only
+- **WHEN** user calls `submit_prompt(..., provider_id="openai")`
+- **THEN** system includes only providerID in model object in POST body
+
+#### Scenario: Prompt submission with model ID only
+- **WHEN** user calls `submit_prompt(..., model_id="gpt-4")`
+- **THEN** system includes only modelID in model object in POST body
+
+#### Scenario: Prompt submission without provider or model
+- **WHEN** user calls `submit_prompt(session_id="sess-123", text="Query")` without provider_id or model_id
+- **THEN** system POSTs without model object (model is optional)
 
 #### Scenario: Prompt submission with custom agent
 - **WHEN** user calls `submit_prompt(..., agent="plan")`
 - **THEN** system includes agent in POST body
 
 #### Scenario: Prompt submission with system prompt
-- **WHEN** user calls `submit_prompt(..., system="You are a helpful assistant")`
+- **WHEN** user calls `submit_prompt(..., system_prompt="You are a helpful assistant")`
 - **THEN** system includes system prompt in POST body
 
 #### Scenario: Prompt submission with tools enabled
