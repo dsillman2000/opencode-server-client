@@ -226,3 +226,39 @@ class SyncHttpClient:
             HTTP response object
         """
         return self._request_with_retry(method, url, directory=directory, **kwargs)
+
+    def stream(
+        self, method: str, url: str, directory: Optional[str] = None, **kwargs: Any
+    ):
+        """Stream an HTTP response for long-lived connections (e.g., SSE).
+
+        This method returns a context manager that allows streaming responses
+        without retry logic. Use for Server-Sent Events and other streaming
+        protocols that maintain long-lived connections.
+
+        Args:
+            method: HTTP method (GET, POST, DELETE, etc.)
+            url: URL path (relative to base_url)
+            directory: Optional directory context
+            **kwargs: Additional arguments to pass to httpx
+
+        Returns:
+            Context manager for streaming response
+
+        Example:
+            >>> with client.stream("GET", "/global/event") as response:
+            ...     for line in response.iter_lines():
+            ...         print(line)
+        """
+        headers = kwargs.get("headers", {})
+        if isinstance(headers, dict):
+            headers = dict(headers)  # Make a copy
+        else:
+            headers = dict(headers)
+
+        if directory:
+            headers["X-Opencode-Directory"] = directory
+
+        kwargs["headers"] = headers
+
+        return self._client.stream(method, url, **kwargs)

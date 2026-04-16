@@ -1,82 +1,85 @@
 ## Context
 
-Layer 2 delivered synchronous session management and polling. Modern Python applications need async/await support for concurrent operations, and polling-based status tracking creates unnecessary load on the server. The OpenCode server exposes SSE at `/global/event` for real-time updates. This layer mirrors all sync operations with async equivalents and adds event streaming for reactive workflows.
+Layer 2 delivers event-driven session management via sync API with background threading. Layer 3 mirrors this with async/await, providing high-concurrency applications with a native async experience. Both layers use the same SSE foundation (`/global/event`) and reuse shared event types and parsing logic. This layer focuses on async equivalents and asyncio integration, not on adding new event capabilities.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Provide complete async/await API mirroring sync surface
 - Support AsyncOpencodeServerClient as primary async entry point
-- Enable efficient real-time updates via SSE event subscription
-- Parse raw SSE events into typed Python objects
-- Support both sync (threading-based) and async (asyncio-based) event subscriptions
-- Allow users to choose reactive (event-driven) or imperative (polling) patterns
+- Enable efficient real-time updates via SSE event subscription (asyncio-based)
+- Reuse event types and parser from Layer 2
+- Support both callback and async iterator patterns for events
+- Allow users to choose reactive (event-driven) or polling patterns if needed
+- Maintain consistency with sync API surface
 
 **Non-Goals:**
-- Mixing sync and async in single client (use appropriate client for your context)
+- Polling as primary mechanism (SSE is primary for both)
+- Mixing sync and async in single client (use appropriate client)
 - Server-side caching or local state management (keep stateless)
 - Custom event filters/transforms (provide raw events + typed helpers)
-- Worktree event handling (Layer 5)
+- Worktree event handling (Layer 4+)
 
 ## Decisions
 
 ### Decision 1: Full Async Mirror vs. Wrapper
 
-**Choice:** Implement separate AsyncSessionManager, AsyncPromptSubmitter, AsyncResponsePoller classes (mirror not wrapper)
+**Choice:** Implement separate AsyncSessionManager, AsyncPromptSubmitter, AsyncEventSubscriber classes (mirror not wrapper)
 
 **Rationale:**
 - Async has different patterns (coroutines, cancellation tokens, etc.)
 - Wrapper-based approach would require complex abstractions
 - Users never mix sync/async in same application
 - Clear, understandable code for each mode
+- Reuse shared event types (no duplication)
 
 **Alternatives Considered:**
 - Wrapper around sync: Defeats purpose of async (still blocking)
 - Runtime switching: Confusing API surface
 
-### Decision 2: SSE via Callbacks vs. Async Iterator
+### Decision 2: Event-Driven Async, Not Polling
 
-**Choice:** Callback-based subscriptions (both sync and async) with optional async iteration helper
-
-**Rationale:**
-- Matches common event patterns in Python (callbacks for reactive)
-- Decouples event source from consumer
-- Easy to implement filtering/routing in callbacks
-- Supports multiple subscribers on same client
-
-**Alternatives Considered:**
-- Async iterator only: Limits to one consumer; less familiar pattern
-- Polling only: Defeats purpose of SSE
-
-### Decision 3: Background Thread vs. Task for Sync Events
-
-**Choice:** Background thread for sync event subscription; asyncio task for async
+**Choice:** AsyncEventSubscriber uses asyncio tasks to read SSE stream; same /global/event as sync
 
 **Rationale:**
-- Sync code doesn't have asyncio event loop running
-- Thread reads SSE stream; callback invoked in thread
-- For async: asyncio task reads stream; callback awaited in task context
-- Clean separation for each mode
+- Consistent with Layer 2 (both event-driven)
+- SSE is perfect for asyncio (stream of events maps to async iterator)
+- No polling overhead; concurrency via asyncio, not threads
+- Scales naturally to hundreds of concurrent sessions
 
 **Alternatives Considered:**
-- All via asyncio: Forces blocking sync code to use asyncio.run()
-- All via threads: Inefficient for async applications
+- Async polling: Defeats purpose of async
+- Only blocking operations: Loses concurrency benefits
 
-### Decision 4: Event Typing Strategy
+### Decision 3: Callbacks + Async Iterator Support
 
-**Choice:** Define typed event classes (SessionStatusEvent, MessageUpdatedEvent, etc.); parser maps raw SSE to types
+**Choice:** AsyncEventSubscriber supports both callback-based subscriptions and async iterator pattern
 
 **Rationale:**
-- Type safety and IDE support
-- Clear event schema via dataclasses
-- Easy to pattern match on event types
-- Can ignore unknown event types gracefully
+- Callbacks match sync API surface for consistency
+- Async iterator is more Pythonic for some workflows
+- Users can choose pattern that fits their use case
+- Easy to implement both; they're not mutually exclusive
 
 **Alternatives Considered:**
-- Dict[str, Any] throughout: Lose type checking
-- Only TypeScript-like unions: No Python dataclass benefits
+- Callbacks only: Less Pythonic for async
+- Async iterator only: Limits to one consumer; breaks parity with sync
+- Neither: Makes event streaming awkward
 
-### Decision 5: Error Handling in Event Streams
+### Decision 4: Shared Event Types Across Sync/Async
+
+**Choice:** Reuse event types, parser from Layer 2; no async-specific variants
+
+**Rationale:**
+- Avoids code duplication
+- Makes it easy to migrate from sync to async (same event model)
+- EventParser is stateless; works for both contexts
+- Reduces cognitive load: one event model, not sync and async variants
+
+**Alternatives Considered:**
+- Async-specific event types: Wastes code; confusing for users
+
+### Decision 5: Error Handling in Async Event Streams
 
 **Choice:** Pass errors to error_handler callback; stream continues on recoverable errors, stops on fatal
 
@@ -84,7 +87,7 @@ Layer 2 delivered synchronous session management and polling. Modern Python appl
 - Stream disruption should be explicit
 - Allows user to log, retry, or gracefully degrade
 - Fatal errors (auth, connection refused) stop stream
-- Transient errors (short network hiccup) retried by HTTP client
+- Transient errors retried by HTTP client
 
 **Alternatives Considered:**
 - Raise exceptions: Would stop stream abruptly
@@ -95,19 +98,20 @@ Layer 2 delivered synchronous session management and polling. Modern Python appl
 
 | Risk | Mitigation |
 |------|-----------|
-| **Code duplication**: Async mirrors double async code | Good; keeps code clear. Document shared patterns in design guide. |
-| **Event callback complexity**: User callbacks could block event loop | Document that sync callbacks should be quick; async callbacks with await is safe |
-| **SSE connection loss**: Network disruption could break stream | HTTP client retries transient errors; fatal errors trigger error_handler |
-| **Event order guarantees**: SSE may reorder or lose events | Document eventual-consistency; events are hints, not transactions |
-| **Backward compat**: Adding events later without breaking | Events are new; no compat concern for this layer |
+| **Code duplication**: Async mirrors double async code | Good; keeps code clear and maintainable. Document shared patterns in design guide. |
+| **Event callback latency**: User callbacks could block event processing in asyncio | Document that async callbacks should not block; use `asyncio.create_task()` for long operations |
+| **SSE connection loss**: Network disruption could break stream | HTTP client retries transient errors; fatal errors trigger error_handler callback |
+| **Event order guarantees**: SSE may reorder or lose events | Document eventual-consistency model; events are notifications, not transactions |
+| **Backward compat**: Adding capabilities later without breaking | Events are stable; shared types reduce future churn |
 
 ## Migration Plan
 
-No migration needed; this is additive API. Users choose sync or async based on their architecture.
+No migration needed; this is additive API. Users choose sync or async based on their application architecture. Both are event-driven from the ground up.
 
 ## Open Questions
 
-1. Should event subscriptions support filtering by session_id at subscription time?
-2. Should we buffer events and provide replay, or just stream live?
-3. What's the recommended error_handler behavior - should it log, raise, or just count?
-4. Should we add event metrics/stats (events processed, errors, etc.)?
+1. Should AsyncEventSubscriber.subscribe() accept both async callbacks and sync callbacks?
+2. Should we provide an async context manager for automatic subscription cleanup?
+3. What's the recommended pattern for collecting events in async workflows?
+4. Should we buffer events and provide replay, or just stream live?
+
