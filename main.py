@@ -1,7 +1,27 @@
 import os
+import uuid
 from time import sleep
 
-from opencode_server_client import OpencodeServerClient, RetryConfig, ServerConfig
+from opencode_server_client import (
+    AnyEvent,
+    OpencodeServerClient,
+    RetryConfig,
+    ServerConfig,
+)
+
+
+def handle_oc_event(event: AnyEvent):
+    # print(f"Received event: {event}")
+    match event.__class__.__name__:
+        case "SessionIdleEvent":
+            print(f"Session {event.session_id} is now idle")
+        case "MessageUpdatedEvent":
+            print(f"Message {event.message_id} was updated with new content")
+        case "SessionStatusEvent":
+            print(f"Session {event.session_id} status changed to {event.status}")
+        case _:
+            return
+
 
 if __name__ == "__main__":
     opencode_user = "opencode"
@@ -33,17 +53,27 @@ if __name__ == "__main__":
     print(f"Model capabilities - Toolcall: {deepseek_chat_model.capabilities.has_toolcall()}")
 
     # Subscribe to events
-    client.events.subscribe(
-        on_event=lambda e: print(f"Received event: {e}"),
-    )
+    client.events.subscribe(on_event=handle_oc_event)
 
     # Create a session and submit the prompt
-    session = client.create_session()
+    uid = str(uuid.uuid4())[:8]
+    session = client.create_session(title=f"sun-mass (temp {uid})")
     print(f"Created session: {session['id']}")
 
+    sun_prompt = """
+What is the mass of the sun? You must search the web to find the answer, and return the answer in the following JSON format:
+
+    {
+        "sun_mass_kg_int": 123,
+        "sun_mass_kg_scientific": "1.2e3",
+        "source_url": "https://example.com"
+    }
+
+Return your answer with no additional text or explanation, just the JSON. You must use the web search tool to find the answer, you cannot rely on any internal knowledge.
+    """.strip()
     message_id = client.prompts.submit_prompt(
         session_id=session["id"],
-        text="What is the mass of the sun?",
+        text=sun_prompt,
         agent="build",
         provider_id="deepseek",
         model_id="deepseek-chat",

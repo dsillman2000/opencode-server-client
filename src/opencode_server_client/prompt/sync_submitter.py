@@ -17,10 +17,10 @@ Typical usage:
 """
 
 import logging
-import uuid
 from typing import Any, Dict, Optional
 
 from opencode_server_client.http_client.sync_client import SyncHttpClient
+from opencode_server_client.identifiers import generate_message_id, generate_part_id
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class PromptSubmitter:
         """
         # Generate message_id if not provided
         if not message_id:
-            message_id = "msg_" + str(uuid.uuid4())
+            message_id = generate_message_id()
 
         # Abort first if requested
         if abort:
@@ -125,9 +125,7 @@ class PromptSubmitter:
         # Build the strict SSE-first wire payload expected by prompt_async.
         payload = _PromptPayload(
             {
-                "parts": [
-                    {"type": "text", "text": text, "id": "prt_" + str(uuid.uuid4())}
-                ],
+                "parts": [{"type": "text", "text": text, "id": generate_part_id()}],
                 "messageID": message_id,
             }
         )

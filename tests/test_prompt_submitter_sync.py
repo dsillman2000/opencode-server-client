@@ -94,10 +94,11 @@ class TestPromptSubmitter(TestCase):
 
         args, kwargs = self.mock_http_client.post.call_args
         self.assertIn("message_id", kwargs["json"])
-        # Should be UUID-like
         message_id = kwargs["json"]["message_id"]
         self.assertIsNotNone(message_id)
-        self.assertGreater(len(message_id), 0)
+        self.assertTrue(message_id.startswith("msg_"))
+        self.assertEqual(len(message_id), 30)
+        self.assertNotIn("-", message_id)
 
     def test_submit_prompt_with_custom_message_id(self):
         """Test submit_prompt() with custom message_id."""
@@ -113,6 +114,23 @@ class TestPromptSubmitter(TestCase):
 
         args, kwargs = self.mock_http_client.post.call_args
         self.assertEqual(kwargs["json"]["message_id"], "custom_id")
+
+    def test_submit_prompt_autogenerates_part_id(self):
+        """Test submit_prompt() auto-generates OpenCode-style part IDs."""
+        self.mock_http_client.post.return_value.json.return_value = {
+            "message_id": "generated_id",
+        }
+
+        self.submitter.submit_prompt(
+            session_id="abc123",
+            text="Hello",
+        )
+
+        args, kwargs = self.mock_http_client.post.call_args
+        part_id = kwargs["json"]["parts"][0]["id"]
+        self.assertTrue(part_id.startswith("prt_"))
+        self.assertEqual(len(part_id), 30)
+        self.assertNotIn("-", part_id)
 
     def test_submit_prompt_abort_false_no_abort_call(self):
         """Test submit_prompt() with abort=False doesn't call abort."""

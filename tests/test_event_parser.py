@@ -10,6 +10,7 @@ from opencode_server_client.events.types import (
     MessageUpdatedEvent,
     ServerConnectedEvent,
     ServerHeartbeatEvent,
+    SessionCreatedEvent,
     SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
@@ -125,6 +126,17 @@ class TestEventParser(TestCase):
         self.assertIsInstance(event, SessionUpdatedEvent)
         self.assertEqual(event.session_id, "abc123")
         self.assertEqual(event.info, {"status": "busy", "user": "john"})
+        self.assertIsInstance(event.timestamp, datetime)
+
+    def test_parse_session_created_event(self):
+        """Test parsing SessionCreatedEvent from raw SSE."""
+        sse_data = b'{"directory": "/home/dsillman2000/python-projects/opencode-server-client", "payload": {"type": "session.created", "properties": {"sessionID": "ses_264a5a95cffelRthAmLGE15Qkl", "info": {"id": "ses_264a5a95cffelRthAmLGE15Qkl", "slug": "calm-meadow", "version": "1.4.3", "projectID": "0ec0e6c3eb70a1e4d7b34cc2218359baaf45a482", "directory": "/home/dsillman2000/python-projects/opencode-server-client", "title": "sun-mass (df6c5762)", "time": {"created": 1776427882147, "updated": 1776427882147}}}}}'
+        event = self.parser.parse(sse_data)
+
+        self.assertIsInstance(event, SessionCreatedEvent)
+        self.assertEqual(event.session_id, "ses_264a5a95cffelRthAmLGE15Qkl")
+        self.assertEqual(event.info["slug"], "calm-meadow")
+        self.assertEqual(event.info["title"], "sun-mass (df6c5762)")
         self.assertIsInstance(event.timestamp, datetime)
 
     def test_parse_session_updated_event_with_nested_info(self):

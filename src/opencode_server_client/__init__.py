@@ -100,6 +100,12 @@ from opencode_server_client.exceptions import (
     WorktreeError,
 )
 from opencode_server_client.http_client import AsyncHttpClient, SyncHttpClient
+from opencode_server_client.identifiers import (
+    generate_message_id,
+    generate_new_id,
+    generate_part_id,
+    generate_session_id,
+)
 from opencode_server_client.prompt import PromptSubmitter
 from opencode_server_client.provider import ProviderManager
 from opencode_server_client.provider.types import (
@@ -157,6 +163,11 @@ __all__ = [
     # HTTP Clients
     "SyncHttpClient",
     "AsyncHttpClient",
+    # Identifier utilities
+    "generate_new_id",
+    "generate_message_id",
+    "generate_part_id",
+    "generate_session_id",
     # Type definitions
     "SessionMetadata",
     "UserMessage",

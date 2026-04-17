@@ -7,6 +7,7 @@ endpoint and represent real-time changes in session state.
 Shared event types:
 - SessionStatusEvent: Session status changed (idle/busy/error)
 - SessionIdleEvent: Session transitioned to idle state
+- SessionCreatedEvent: New session created
 - SessionUpdatedEvent: Session metadata updated
 - MessageUpdatedEvent: Message content updated in a session
 - MessagePartUpdatedEvent: Partial message update (streaming content)
@@ -70,6 +71,11 @@ class SessionUpdatedEvent:
     session_id: str
     info: dict
     timestamp: datetime
+
+
+@dataclass
+class SessionCreatedEvent(SessionUpdatedEvent):
+    """Event indicating a new session was created."""
 
 
 @dataclass
@@ -190,6 +196,7 @@ class ServerConnectedEvent:
 AnyEvent = Union[
     SessionStatusEvent,
     SessionIdleEvent,
+    SessionCreatedEvent,
     SessionUpdatedEvent,
     MessageUpdatedEvent,
     MessagePartUpdatedEvent,

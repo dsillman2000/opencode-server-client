@@ -26,6 +26,7 @@ from opencode_server_client.events.types import (
     MessageUpdatedEvent,
     ServerConnectedEvent,
     ServerHeartbeatEvent,
+    SessionCreatedEvent,
     SessionDiffEvent,
     SessionErrorEvent,
     SessionIdleEvent,
@@ -138,6 +139,20 @@ class EventParser:
                     )
                 return _data[field_name]
 
+            def parse_event_timestamp(*values: object) -> datetime:
+                """Parse the first available timestamp, including nested time dicts."""
+                for value in values:
+                    if value is None:
+                        continue
+                    if isinstance(value, dict):
+                        for key in ("created", "updated", "timestamp", "time"):
+                            nested = value.get(key)
+                            if nested is not None:
+                                return parse_event_timestamp(nested)
+                        continue
+                    return parse_timestamp(value)
+                return datetime.now()
+
             if event_type == "session.status":
                 return SessionStatusEvent(
                     session_id=check_required("sessionID"),
@@ -155,12 +170,27 @@ class EventParser:
                     ),
                 )
 
+            elif event_type == "session.created":
+                info = check_required("info")
+                return SessionCreatedEvent(
+                    session_id=check_required("sessionID"),
+                    info=info,
+                    timestamp=parse_event_timestamp(
+                        data.get("timestamp"),
+                        data.get("time"),
+                        info.get("time") if isinstance(info, dict) else None,
+                    ),
+                )
+
             elif event_type == "session.updated":
+                info = check_required("info")
                 return SessionUpdatedEvent(
                     session_id=check_required("sessionID"),
-                    info=check_required("info"),
-                    timestamp=parse_timestamp(
-                        data.get("time", datetime.now().isoformat())
+                    info=info,
+                    timestamp=parse_event_timestamp(
+                        data.get("timestamp"),
+                        data.get("time"),
+                        info.get("time") if isinstance(info, dict) else None,
                     ),
                 )
 
