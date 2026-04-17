@@ -91,6 +91,10 @@ class MessageUpdatedEvent:
 
     session_id: str
     message_id: str
+    cost: Optional[float]
+    tokens: Optional[dict]
+    created_timestamp: Optional[datetime]
+    completed_timestamp: Optional[datetime]
     timestamp: datetime
 
 

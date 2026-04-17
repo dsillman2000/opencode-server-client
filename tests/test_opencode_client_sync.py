@@ -75,6 +75,22 @@ class TestOpencodeServerClient(TestCase):
 
         mock_delete.assert_called_once_with("abc123", directory=None)
 
+    @patch("opencode_server_client.session.sync_manager.SessionManager.update")
+    def test_update_session_convenience_method(self, mock_update):
+        """Test update_session() convenience method."""
+        mock_update.return_value = {"session_id": "abc123", "title": "Example rename"}
+
+        client = OpencodeServerClient(self.config)
+        result = client.update_session("abc123", title="Example rename")
+
+        mock_update.assert_called_once_with(
+            "abc123",
+            title="Example rename",
+            parent_id=None,
+            directory=None,
+        )
+        self.assertEqual(result["title"], "Example rename")
+
     def test_context_manager_support(self):
         """Test context manager support (with statement)."""
         with OpencodeServerClient(self.config) as client:

@@ -121,6 +121,28 @@ class TestSessionManager(TestCase):
         with self.assertRaises(Exception):
             self.manager.get("nonexistent")
 
+    def test_update_succeeds(self):
+        """Test update() can rename a session."""
+        self.mock_http_client.request.return_value.json.return_value = {
+            "session_id": "abc123",
+            "title": "Example rename",
+        }
+
+        result = self.manager.update("abc123", title="Example rename")
+
+        self.mock_http_client.request.assert_called_once()
+        args, kwargs = self.mock_http_client.request.call_args
+        self.assertEqual(args[0], "PATCH")
+        self.assertEqual(args[1], "/session/abc123")
+        self.assertEqual(kwargs["json"], {"title": "Example rename"})
+        self.assertEqual(kwargs["directory"], "/default/dir")
+        self.assertEqual(result["title"], "Example rename")
+
+    def test_update_requires_changes(self):
+        """Test update() rejects empty patches."""
+        with self.assertRaises(ValueError):
+            self.manager.update("abc123")
+
     def test_delete_succeeds(self):
         """Test delete() succeeds."""
         self.mock_http_client.delete.return_value.json.return_value = {}

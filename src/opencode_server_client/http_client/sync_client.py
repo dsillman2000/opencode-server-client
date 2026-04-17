@@ -211,6 +211,21 @@ class SyncHttpClient:
         """
         return self._request_with_retry("DELETE", url, directory=directory, **kwargs)
 
+    def patch(
+        self, url: str, directory: Optional[str] = None, **kwargs: Any
+    ) -> httpx.Response:
+        """Perform a PATCH request with retry logic.
+
+        Args:
+            url: URL path (relative to base_url)
+            directory: Optional directory context
+            **kwargs: Additional arguments to pass to httpx
+
+        Returns:
+            HTTP response object
+        """
+        return self._request_with_retry("PATCH", url, directory=directory, **kwargs)
+
     def request(
         self, method: str, url: str, directory: Optional[str] = None, **kwargs: Any
     ) -> httpx.Response:

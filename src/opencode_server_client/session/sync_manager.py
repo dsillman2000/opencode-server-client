@@ -1,7 +1,7 @@
 """Session Manager for CRUD operations on OpenCode sessions.
 
 This module provides the SessionManager class which handles creating, listing,
-getting, and deleting OpenCode sessions via HTTP API.
+getting, updating, and deleting OpenCode sessions via HTTP API.
 
 Typical usage:
     >>> from opencode_server_client.config import ServerConfig
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class SessionManager:
     """Manage OpenCode sessions via HTTP API.
 
-    This class provides methods for creating, listing, getting, and deleting
+    This class provides methods for creating, listing, getting, updating, and deleting
     sessions. It wraps the HTTP client and handles directory context
     (passed via X-Opencode-Directory header).
 
@@ -149,6 +149,54 @@ class SessionManager:
             return response.json()
         except Exception as e:
             logger.error(f"Failed to get session {session_id}: {e}")
+            raise
+
+    def update(
+        self,
+        session_id: str,
+        title: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        directory: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update an existing session.
+
+        This is useful for renaming a session title or changing its parent.
+
+        Args:
+            session_id: ID of the session to update
+            title: Optional new title for the session
+            parent_id: Optional new parent session ID
+            directory: Optional directory context (overrides default)
+
+        Returns:
+            Updated session metadata dict
+
+        Raises:
+            ValueError: If no update fields were provided
+            SessionError: If the update fails
+        """
+        dir_context = directory or self.default_directory
+
+        payload = {}
+        if title is not None:
+            payload["title"] = title
+        if parent_id is not None:
+            payload["parent_id"] = parent_id
+
+        if not payload:
+            raise ValueError("At least one field must be provided to update a session")
+
+        try:
+            response = self.http_client.request(
+                "PATCH",
+                f"/session/{session_id}",
+                json=payload,
+                directory=dir_context,
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Failed to update session {session_id}: {e}")
             raise
 
     def delete(

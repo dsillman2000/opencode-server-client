@@ -198,6 +198,14 @@ class EventParser:
                 return MessageUpdatedEvent(
                     session_id=check_required("sessionID"),
                     message_id=check_required("id", check_required("info", data)),
+                    cost=data.get("info", {}).get("cost"),
+                    tokens=data.get("info", {}).get("tokens"),
+                    created_timestamp=parse_event_timestamp(
+                        data.get("info", {}).get("time", {}).get("created")
+                    ),
+                    completed_timestamp=parse_event_timestamp(
+                        data.get("info", {}).get("time", {}).get("completed")
+                    ),
                     timestamp=parse_timestamp(
                         data.get("timestamp", datetime.now().isoformat())
                     ),

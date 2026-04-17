@@ -233,10 +233,15 @@ class TestEventSubscriber(TestCase):
         callback = MagicMock()
         self.subscriber.subscribe(on_event=callback)
 
+        now = datetime.now()
         event = MessageUpdatedEvent(
             session_id="abc123",
             message_id="msg1",
-            timestamp=datetime.now(),
+            cost=0.42,
+            tokens={"input": 12, "output": 34},
+            created_timestamp=now,
+            completed_timestamp=now,
+            timestamp=now,
         )
 
         self.subscriber._dispatch_event(event)

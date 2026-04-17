@@ -31,10 +31,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from opencode_server_client.config import RetryConfig, ServerConfig
 from opencode_server_client.events.sync_subscriber import EventSubscriber
-from opencode_server_client.events.types import (
-    MessageUpdatedEvent,
-    SessionIdleEvent,
-)
+from opencode_server_client.events.types import MessageUpdatedEvent, SessionIdleEvent
 from opencode_server_client.http_client.sync_client import SyncHttpClient
 from opencode_server_client.prompt.sync_submitter import PromptSubmitter
 from opencode_server_client.provider.sync_manager import ProviderManager
@@ -141,6 +138,46 @@ class OpencodeServerClient:
             List of session metadata dicts
         """
         return self.sessions.list(directory=directory)
+
+    def update_session(
+        self,
+        session_id: str,
+        title: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        directory: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update an existing session.
+
+        Args:
+            session_id: ID of session to update
+            title: Optional new session title
+            parent_id: Optional new parent session ID
+            directory: Optional directory context
+
+        Returns:
+            Updated session metadata dict
+        """
+        return self.sessions.update(
+            session_id,
+            title=title,
+            parent_id=parent_id,
+            directory=directory,
+        )
+
+    def patch_session(
+        self,
+        session_id: str,
+        title: Optional[str] = None,
+        parent_id: Optional[str] = None,
+        directory: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Alias for update_session()."""
+        return self.update_session(
+            session_id,
+            title=title,
+            parent_id=parent_id,
+            directory=directory,
+        )
 
     def delete_session(self, session_id: str, directory: Optional[str] = None) -> None:
         """Delete a session.

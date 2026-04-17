@@ -44,12 +44,21 @@ class TestEventParser(TestCase):
 
     def test_parse_message_updated_event(self):
         """Test parsing MessageUpdatedEvent from raw SSE."""
-        sse_data = b'{"directory": null, "payload": {"type": "message.updated", "properties": {"sessionID": "abc123", "info": {"id": "msg1"}, "timestamp": "2024-04-15T10:01:00Z"}}}'
+        sse_data = b'{"directory": null, "payload": {"type": "message.updated", "properties": {"sessionID": "abc123", "info": {"id": "msg1", "cost": 0.42, "tokens": {"input": 12, "output": 34}, "time": {"created": 1713177660000, "completed": 1713177662000}}, "timestamp": "2024-04-15T10:01:00Z"}}}'
         event = self.parser.parse(sse_data)
 
         self.assertIsInstance(event, MessageUpdatedEvent)
         self.assertEqual(event.session_id, "abc123")
         self.assertEqual(event.message_id, "msg1")
+        self.assertEqual(event.cost, 0.42)
+        self.assertEqual(event.tokens, {"input": 12, "output": 34})
+        self.assertEqual(
+            event.created_timestamp, datetime.fromtimestamp(1713177660000 / 1000)
+        )
+        self.assertEqual(
+            event.completed_timestamp, datetime.fromtimestamp(1713177662000 / 1000)
+        )
+        self.assertIsInstance(event.timestamp, datetime)
 
     def test_parse_message_part_updated_event(self):
         """Test parsing MessagePartUpdatedEvent from raw SSE."""
