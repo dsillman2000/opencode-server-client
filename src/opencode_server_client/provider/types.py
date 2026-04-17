@@ -155,10 +155,26 @@ class ProviderList:
 
     @classmethod
     def from_dict(cls, data: dict) -> "ProviderList":
-        """Create a ProviderList from API response data."""
+        """Create a ProviderList from API response data.
+
+        Supports either of these API shapes for `all`:
+        - {"all": {"openai": {...}, "anthropic": {...}}}
+        - {"all": [{"id": "openai", ...}, {"id": "anthropic", ...}]}
+        """
         all_providers = {}
-        for provider_id, provider_data in data.get("all", {}).items():
-            all_providers[provider_id] = Provider.from_dict(provider_id, provider_data)
+        raw_providers = data.get("all", {})
+
+        if isinstance(raw_providers, dict):
+            for provider_id, provider_data in raw_providers.items():
+                all_providers[provider_id] = Provider.from_dict(
+                    provider_id, provider_data
+                )
+        else:
+            for provider_data in raw_providers:
+                provider_id = provider_data["id"]
+                all_providers[provider_id] = Provider.from_dict(
+                    provider_id, provider_data
+                )
 
         connected = data.get("connected", [])
 
