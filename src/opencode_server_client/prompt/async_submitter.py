@@ -1,51 +1,54 @@
-"""Prompt submission for sending prompts to OpenCode sessions.
+"""Async prompt submission for sending prompts to OpenCode sessions.
 
-This module provides the PromptSubmitter class which handles submitting
-prompts/messages to sessions and managing session abortion.
+This module provides the AsyncPromptSubmitter class which handles submitting
+prompts/messages to sessions asynchronously and managing session abortion.
 
 Typical usage:
-    >>> from opencode_server_client.prompt.sync_submitter import PromptSubmitter
-    >>> submitter = PromptSubmitter(http_client)
-    >>> result = submitter.submit_prompt(
-    ...     session_id="abc123",
-    ...     text="What is the file structure?",
-    ...     provider_id="nvidia",
-    ...     model_id="nim",
-    ...     abort=True  # abort current processing first
-    ... )
-    >>> print(f"Message ID: {result['message_id']}")
+    >>> from opencode_server_client.http_client.async_client import AsyncHttpClient
+    >>> from opencode_server_client.prompt.async_submitter import AsyncPromptSubmitter
+    >>> config = ServerConfig(base_url="http://localhost:8000")
+    >>> async with AsyncHttpClient(config) as http_client:
+    ...     submitter = AsyncPromptSubmitter(http_client)
+    ...     result = await submitter.submit_prompt(
+    ...         session_id="abc123",
+    ...         text="What is the file structure?",
+    ...         provider_id="nvidia",
+    ...         model_id="nim",
+    ...         abort=True  # abort current processing first
+    ...     )
+    ...     print(f"Message ID: {result['message_id']}")
 """
 
 import logging
 from typing import Any, Dict, Optional
 
-from opencode_server_client.http_client.sync_client import SyncHttpClient
+from opencode_server_client.http_client.async_client import AsyncHttpClient
 from opencode_server_client.identifiers import generate_message_id, generate_part_id
 
 logger = logging.getLogger(__name__)
 
 
-class PromptSubmitter:
-    """Submit prompts and manage session abortion via HTTP API.
+class AsyncPromptSubmitter:
+    """Submit prompts and manage session abortion via async HTTP API.
 
     This class handles:
-    - Submitting prompts/messages to sessions
+    - Submitting prompts/messages to sessions asynchronously
     - Optional abort-before-submit logic
     - Session abortion
 
     Attributes:
-        http_client: SyncHttpClient instance for HTTP requests
+        http_client: AsyncHttpClient instance for HTTP requests
     """
 
-    def __init__(self, http_client: SyncHttpClient):
-        """Initialize the PromptSubmitter.
+    def __init__(self, http_client: AsyncHttpClient):
+        """Initialize the AsyncPromptSubmitter.
 
         Args:
-            http_client: SyncHttpClient instance for making requests
+            http_client: AsyncHttpClient instance for making requests
         """
         self.http_client = http_client
 
-    def submit_prompt(
+    async def submit_prompt(
         self,
         session_id: str,
         text: str,
@@ -58,7 +61,7 @@ class PromptSubmitter:
         abort: bool = False,
         directory: Optional[str] = None,
     ) -> str:
-        """Submit a prompt to a session.
+        """Submit a prompt to a session asynchronously.
 
         Args:
             session_id: ID of the session
@@ -79,19 +82,15 @@ class PromptSubmitter:
             PromptSubmissionError: If submission fails
             SessionNotFoundError: If session not found
         """
-        # Generate message_id if not provided
         if not message_id:
             message_id = generate_message_id()
 
-        # Abort first if requested
         if abort:
             try:
-                self.abort_session(session_id, directory=directory)
+                await self.abort_session(session_id, directory=directory)
             except Exception as e:
                 logger.warning(f"Failed to abort session during submit: {e}")
-                # Continue with submission anyway
 
-        # Build the strict SSE-first wire payload expected by prompt_async.
         payload = {
             "parts": [{"type": "text", "text": text, "id": generate_part_id()}],
             "messageID": message_id,
@@ -111,19 +110,18 @@ class PromptSubmitter:
                 payload["model"]["modelID"] = model_id
 
         try:
-            response = self.http_client.post(
+            response = await self.http_client.post(
                 f"/session/{session_id}/prompt_async",
                 json=payload,
                 directory=directory,
             )
             response.raise_for_status()
-            # Should raise a 204 No Content if successful.
             return message_id
         except Exception as e:
             logger.error(f"Failed to submit prompt to session {session_id}: {e}")
             raise
 
-    def abort_session(
+    async def abort_session(
         self,
         session_id: str,
         directory: Optional[str] = None,
@@ -139,7 +137,7 @@ class PromptSubmitter:
             PromptSubmissionError: If abortion fails
         """
         try:
-            response = self.http_client.post(
+            response = await self.http_client.post(
                 f"/session/{session_id}/abort",
                 directory=directory,
             )

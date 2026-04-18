@@ -1,13 +1,10 @@
 [project]
 name = "opencode-server-client"
-version = "0.1.0"
+version = "0.3.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
-dependencies = [
-    "httpx>=0.28.1",
-    "httpx-sse>=0.4.3",
-]
+dependencies = ["httpx>=0.28.1"]
 
 
 [tool.hatch.version]
@@ -25,5 +22,5 @@ dev = [
     "pytest>=9.0.0,<10",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.0,<1.0.0",
+    "ruff>=0.15.11,<1.0.0",
 ]

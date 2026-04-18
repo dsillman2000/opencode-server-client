@@ -18,7 +18,17 @@ exponential backoff for transient failures.
 **Session Management (Layer 2):**
 - `OpencodeServerClient`: Main synchronous client with provider, session, and event management
 - `SessionManager`: CRUD operations for sessions
+
+**Session Management (Layer 3 - Async):**
+- `AsyncOpencodeServerClient`: Main asynchronous client with provider, session, and event management
+- `AsyncSessionManager`: Async CRUD operations for sessions
+- `AsyncPromptSubmitter`: Async prompt submission and session abortion
+- `AsyncEventSubscriber`: Subscribe to real-time events via SSE (asyncio tasks)
+
+**Prompt Submission:**
 - `PromptSubmitter`: Submit prompts and manage session abortion
+
+**Event Subscription:**
 - `EventSubscriber`: Subscribe to real-time events via SSE (background thread)
 
 **Provider & Model Types:**
@@ -69,8 +79,26 @@ Example:
     ...         )
     ...         for msg in messages:
     ...             print(msg)
+
+Async Example:
+    >>> import asyncio
+    >>> from opencode_server_client import AsyncOpencodeServerClient, ServerConfig
+    >>>
+    >>> async def main():
+    ...     config = ServerConfig(base_url="http://localhost:8000")
+    ...     async with AsyncOpencodeServerClient(config, default_directory="/path") as client:
+    ...         session = await client.create_session(title="My Session")
+    ...         messages = await client.submit_prompt_and_wait(
+    ...             session_id=session["session_id"],
+    ...             text="What's in this directory?"
+    ...         )
+    ...         for msg in messages:
+    ...             print(msg)
+    >>>
+    >>> asyncio.run(main())
 """
 
+from opencode_server_client.client_async import AsyncOpencodeServerClient
 from opencode_server_client.client_sync import OpencodeServerClient
 from opencode_server_client.config import RetryConfig, ServerConfig
 from opencode_server_client.events import (
@@ -89,6 +117,7 @@ from opencode_server_client.events import (
     SessionStatusEvent,
     SessionUpdatedEvent,
 )
+from opencode_server_client.events.async_subscriber import AsyncEventSubscriber
 from opencode_server_client.exceptions import (
     EventStreamError,
     OpencodeError,
@@ -107,7 +136,8 @@ from opencode_server_client.identifiers import (
     generate_session_id,
 )
 from opencode_server_client.prompt import PromptSubmitter
-from opencode_server_client.provider import ProviderManager
+from opencode_server_client.prompt.async_submitter import AsyncPromptSubmitter
+from opencode_server_client.provider import AsyncProviderManager, ProviderManager
 from opencode_server_client.provider.types import (
     InputCapabilities,
     Model,
@@ -118,6 +148,7 @@ from opencode_server_client.provider.types import (
     ProviderList,
 )
 from opencode_server_client.session import SessionManager
+from opencode_server_client.session.async_manager import AsyncSessionManager
 from opencode_server_client.types import (
     AssistantMessage,
     SessionMetadata,
@@ -125,11 +156,17 @@ from opencode_server_client.types import (
     WorktreeMetadata,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 __all__ = [
-    # Main Client
+    # Main Clients
     "OpencodeServerClient",
+    "AsyncOpencodeServerClient",
+    # Async Managers
+    "AsyncSessionManager",
+    "AsyncPromptSubmitter",
+    "AsyncEventSubscriber",
+    "AsyncProviderManager",
     # Managers
     "ProviderManager",
     "SessionManager",
