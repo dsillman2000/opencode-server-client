@@ -72,9 +72,7 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.post.return_value = mock_response
 
-        self.loop.run_until_complete(
-            self.manager.create(directory="/custom/dir")
-        )
+        self.loop.run_until_complete(self.manager.create(directory="/custom/dir"))
 
         args, kwargs = self.mock_http_client.post.call_args
         self.assertEqual(kwargs["directory"], "/custom/dir")

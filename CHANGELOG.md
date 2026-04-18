@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-17
+
+### Added
+
+- **Async Session API (Layer 3)**: Full async/await support for session management
+  - `AsyncOpencodeServerClient`: Async version of main high-level API
+  - `AsyncSessionManager`: Async CRUD operations for sessions
+  - `AsyncPromptSubmitter`: Async prompt submission and session abortion
+  - `AsyncEventSubscriber`: Subscribe to real-time events via asyncio tasks
+
+- **Provider Management**: Query available providers and their models
+  - `ProviderManager`: Sync provider and model querying
+  - `AsyncProviderManager`: Async provider and model querying
+  - `Provider`: Provider information with available models
+  - `Model`: Individual model with capabilities and pricing
+  - `ModelCapabilities`: Text I/O, tool calls, reasoning support
+  - `InputCapabilities` / `OutputCapabilities`: Specific I/O capabilities
+  - `ModelCost`: Pricing information for input/output
+
+- **Enhanced Event Infrastructure**: Additional real-time event types
+  - `MessagePartDeltaEvent`: Incremental message part updates (streaming tokens)
+  - `SessionUpdatedEvent`: Session metadata updates
+  - `SessionDiffEvent`: Session state diff/changes
+  - `ServerConnectedEvent`: Server connection established events
+
+- **Identifier Generation**: OpenCode-style unique ID generation
+  - `generate_new_id()`: Generate generic unique IDs
+  - `generate_message_id()`: Generate message IDs (msg_* prefix)
+  - `generate_part_id()`: Generate part IDs (prt_* prefix)
+  - `generate_session_id()`: Generate session IDs (ses_* prefix)
+
+### Breaking Changes
+
+- **Prompt Payload Format**: Removed legacy `_PromptPayload` wrapper class. Payloads are now plain dicts using the standard SSE format keys:
+  - `parts` (array of part objects) instead of `text`
+  - `messageID` instead of `message_id`
+- Tests updated to use the new wire format keys
+
 ## [0.2.0] - 2026-04-15
 
 ### Added
