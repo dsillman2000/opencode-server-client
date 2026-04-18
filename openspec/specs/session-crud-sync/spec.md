@@ -1,7 +1,10 @@
 # session-crud-sync Specification
 
 ## Purpose
-TBD - created by archiving change sync-session-api. Update Purpose after archive.
+Define requirements for synchronous session lifecycle management including create, read, update, delete, and listing operations. Provides SessionManager interface for directory-based session organization and default directory context support.
+
+> **NOTE**: Session IDs are generated as 30-character base-62 monotonic identifiers prefixed with `ses_` (e.g., `ses_abc123def456ghijklmnopqr`). This matches OpenCode's native ID semantics using timestamp-derived ordering.
+
 ## Requirements
 ### Requirement: Create Session
 The system SHALL allow users to create a new session in a directory.
@@ -85,4 +88,27 @@ The system SHALL support optional default directory at SessionManager level.
 #### Scenario: No default directory
 - **WHEN** user creates `SessionManager(client)` without default
 - **THEN** operations require explicit directory parameter
+
+### Requirement: Update Session
+The system SHALL allow users to update session metadata (title, status, version).
+
+#### Scenario: Update session title
+- **WHEN** user calls `SessionManager.update(session_id="sess-123", title="New Title")`
+- **THEN** system PATCHes `/session/sess-123` with `{"title": "New Title"}` and returns updated `SessionMetadata`
+
+#### Scenario: Update multiple fields
+- **WHEN** user calls `update(session_id="sess-123", title="Title", version=2)`
+- **THEN** system sends both fields in PATCH request
+
+#### Scenario: Update with no fields
+- **WHEN** user calls `update(session_id="sess-123")` with no parameters
+- **THEN** `ValueError` is raised
+
+#### Scenario: Update non-existent session
+- **WHEN** user calls `update(session_id="invalid", title="Test")` and server responds 404
+- **THEN** `SessionNotFoundError` is raised
+
+#### Scenario: Update session retries on 502
+- **WHEN** user updates session and server responds 502 then 200
+- **THEN** system retries and returns updated `SessionMetadata`
 

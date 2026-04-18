@@ -1,5 +1,7 @@
 ## ADDED Requirements
 
+> **NOTE**: Session IDs are generated as 30-character base-62 monotonic identifiers prefixed with `ses_` (e.g., `ses_abc123def456ghijklmnopqr`). This matches OpenCode's native ID semantics using timestamp-derived ordering.
+
 ### Requirement: Async Create Session
 The system SHALL allow users to asynchronously create a new session.
 
@@ -72,4 +74,23 @@ The system SHALL allow users to asynchronously wait for session idle state.
 
 #### Scenario: Wait for idle detects session not found
 - **WHEN** user awaits and session is deleted (404)
+- **THEN** `SessionNotFoundError` is raised
+
+### Requirement: Async Update Session
+The system SHALL allow users to asynchronously update session metadata.
+
+#### Scenario: Update session title with await
+- **WHEN** user awaits `AsyncSessionManager.update(session_id="sess-123", title="New Title")`
+- **THEN** coroutine PATCHes `/session/sess-123` and returns updated `SessionMetadata`
+
+#### Scenario: Update multiple fields
+- **WHEN** user awaits `update(session_id="sess-123", title="Title", version=2)`
+- **THEN** coroutine sends both fields in PATCH request
+
+#### Scenario: Update with no fields raises error
+- **WHEN** user awaits `update(session_id="sess-123")` with no parameters
+- **THEN** `ValueError` is raised
+
+#### Scenario: Update non-existent session
+- **WHEN** user awaits `update(session_id="invalid", title="Test")` and server responds 404
 - **THEN** `SessionNotFoundError` is raised

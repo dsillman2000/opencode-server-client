@@ -1,5 +1,7 @@
 ## ADDED Requirements
 
+> **NOTE**: Part IDs are generated as 30-character base-62 monotonic identifiers prefixed with `prt_` (e.g., `prt_abc123def456ghijklmnopqr`). This matches OpenCode's native ID semantics using timestamp-derived ordering.
+
 ### Requirement: Async Get Messages
 The system SHALL allow users to asynchronously retrieve messages from a session.
 

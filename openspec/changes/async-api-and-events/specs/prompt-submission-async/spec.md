@@ -1,5 +1,7 @@
 ## ADDED Requirements
 
+> **NOTE**: Message IDs are generated as 30-character base-62 monotonic identifiers prefixed with `msg_` (e.g., `msg_abc123def456ghijklmnopqr`). This matches OpenCode's native ID semantics using timestamp-derived ordering.
+
 ### Requirement: Async Submit Prompt
 The system SHALL allow users to asynchronously submit prompts to sessions.
 

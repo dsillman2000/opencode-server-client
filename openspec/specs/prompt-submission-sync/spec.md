@@ -2,6 +2,9 @@
 
 ## Purpose
 Define requirements for synchronous prompt submission to OpenCode sessions, including support for specifying AI providers and models, managing prompt metadata, and coordinating session abortion with prompt submission.
+
+> **NOTE**: Message IDs are generated as 30-character base-62 monotonic identifiers prefixed with `msg_` (e.g., `msg_abc123def456ghijklmnopqr`). This matches OpenCode's native ID semantics using timestamp-derived ordering.
+
 ## Requirements
 ### Requirement: Submit Prompt to Session
 The system SHALL allow users to submit a prompt to a session for processing.
