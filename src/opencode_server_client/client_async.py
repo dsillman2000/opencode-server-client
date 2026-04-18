@@ -207,7 +207,7 @@ class AsyncOpencodeServerClient:
             session_id: ID of session to submit to
             text: Prompt text
             timeout: Maximum time to wait for idle (seconds)
-            abort: If True, abort session before submitting
+            abort: If True, abort session if timeout expires before idle
             poll_interval: Polling interval for checking session status
             on_event: Optional callback for each event (MessageUpdatedEvent, etc.)
             directory: Optional directory context
