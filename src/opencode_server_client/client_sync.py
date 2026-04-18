@@ -241,7 +241,6 @@ class OpencodeServerClient:
             self.prompts.submit_prompt(
                 session_id=session_id,
                 text=text,
-                abort=abort,
                 directory=directory,
                 model_id=model_id,
                 provider_id=provider_id,

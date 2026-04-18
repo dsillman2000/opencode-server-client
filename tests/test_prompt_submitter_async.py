@@ -112,26 +112,6 @@ class TestAsyncPromptSubmitter(TestCase):
         self.assertEqual(payload["messageID"], "msg-custom-123")
         self.assertEqual(result, "msg-custom-123")
 
-    def test_submit_prompt_with_abort_false(self):
-        """Test submit_prompt() with abort=False (no abort call)."""
-        self.mock_http_client.post.return_value.raise_for_status = MagicMock()
-
-        self.loop.run_until_complete(
-            self.submitter.submit_prompt(session_id="abc123", text="Test", abort=False)
-        )
-
-        self.mock_http_client.post.assert_called_once()
-
-    def test_submit_prompt_with_abort_true(self):
-        """Test submit_prompt() with abort=True (abort then submit)."""
-        self.mock_http_client.post.return_value.raise_for_status = MagicMock()
-
-        self.loop.run_until_complete(
-            self.submitter.submit_prompt(session_id="abc123", text="Test", abort=True)
-        )
-
-        self.assertEqual(self.mock_http_client.post.call_count, 2)
-
     def test_abort_session_succeeds(self):
         """Test abort_session() succeeds."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()

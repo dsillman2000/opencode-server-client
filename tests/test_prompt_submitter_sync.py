@@ -134,41 +134,6 @@ class TestPromptSubmitter(TestCase):
         self.assertEqual(len(part_id), 30)
         self.assertNotIn("-", part_id)
 
-    def test_submit_prompt_abort_false_no_abort_call(self):
-        """Test submit_prompt() with abort=False doesn't call abort."""
-        self.mock_http_client.post.return_value.json.return_value = {
-            "message_id": "msg123",
-        }
-
-        result = self.submitter.submit_prompt(
-            session_id="abc123",
-            text="Hello",
-            abort=False,
-        )
-
-        # Should only have one POST call (for submit, not abort)
-        post_calls = [c for c in self.mock_http_client.method_calls if "post" in str(c)]
-        self.assertEqual(len(post_calls), 1)
-
-    def test_submit_prompt_abort_true(self):
-        """Test submit_prompt() with abort=True calls abort first."""
-        self.mock_http_client.post.return_value.json.return_value = {
-            "message_id": "msg123",
-        }
-
-        result = self.submitter.submit_prompt(
-            session_id="abc123",
-            text="Hello",
-            abort=True,
-        )
-
-        # Should have two POST calls: abort + submit
-        post_calls = [
-            c for c in self.mock_http_client.method_calls if "post" in str(c).lower()
-        ]
-        # Check that both calls were made (order: abort first, then submit)
-        self.assertGreaterEqual(len(post_calls), 2)
-
     def test_abort_session_succeeds(self):
         """Test abort_session() succeeds."""
         self.mock_http_client.post.return_value.json.return_value = {}

@@ -58,7 +58,6 @@ class AsyncPromptSubmitter:
         tools: Optional[Dict[str, Any]] = None,
         provider_id: Optional[str] = None,
         model_id: Optional[str] = None,
-        abort: bool = False,
         directory: Optional[str] = None,
     ) -> str:
         """Submit a prompt to a session asynchronously.
@@ -72,7 +71,6 @@ class AsyncPromptSubmitter:
             tools: Optional tools configuration
             provider_id: Optional provider ID (e.g., "anthropic", "openai")
             model_id: Optional model ID (e.g., "opus-4.6", "gpt-5.4")
-            abort: If True, abort session before submitting (default: False)
             directory: Optional directory context
 
         Returns:
@@ -84,12 +82,6 @@ class AsyncPromptSubmitter:
         """
         if not message_id:
             message_id = generate_message_id()
-
-        if abort:
-            try:
-                await self.abort_session(session_id, directory=directory)
-            except Exception as e:
-                logger.warning(f"Failed to abort session during submit: {e}")
 
         payload = {
             "parts": [{"type": "text", "text": text, "id": generate_part_id()}],
