@@ -30,7 +30,7 @@ from opencode_server_client.events.async_subscriber import AsyncEventSubscriber
 from opencode_server_client.events.types import MessageUpdatedEvent, SessionIdleEvent
 from opencode_server_client.http_client.async_client import AsyncHttpClient
 from opencode_server_client.prompt.async_submitter import AsyncPromptSubmitter
-from opencode_server_client.provider.sync_manager import ProviderManager
+from opencode_server_client.provider.async_manager import AsyncProviderManager
 from opencode_server_client.session.async_manager import AsyncSessionManager
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class AsyncOpencodeServerClient:
 
         self._http_client = AsyncHttpClient(server_config, retry_config)
 
-        self.providers = ProviderManager(self._http_client)
+        self.providers = AsyncProviderManager(self._http_client)
         self.sessions = AsyncSessionManager(self._http_client, default_directory)
         self.prompts = AsyncPromptSubmitter(self._http_client)
         self.events = AsyncEventSubscriber(self._http_client)
