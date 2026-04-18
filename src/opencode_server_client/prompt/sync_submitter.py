@@ -25,37 +25,6 @@ from opencode_server_client.identifiers import generate_message_id, generate_par
 logger = logging.getLogger(__name__)
 
 
-class _PromptPayload(dict):
-    """Strict prompt_async payload with legacy alias access.
-
-    The actual serialized payload remains SSE-first and only contains
-    the valid wire keys, but tests and older callers can still read
-    `text` and `message_id` as computed aliases.
-    """
-
-    def __contains__(self, key: object) -> bool:
-        if key in {"text", "message_id"}:
-            return True
-        return super().__contains__(key)
-
-    def __getitem__(self, key: str) -> Any:
-        if key == "text":
-            parts = super().__getitem__("parts")
-            for part in parts:
-                if part.get("type") == "text":
-                    return part.get("text")
-            raise KeyError(key)
-        if key == "message_id":
-            return super().__getitem__("messageID")
-        return super().__getitem__(key)
-
-    def get(self, key: str, default: Any = None) -> Any:
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-
 class PromptSubmitter:
     """Submit prompts and manage session abortion via HTTP API.
 
@@ -123,12 +92,10 @@ class PromptSubmitter:
                 # Continue with submission anyway
 
         # Build the strict SSE-first wire payload expected by prompt_async.
-        payload = _PromptPayload(
-            {
-                "parts": [{"type": "text", "text": text, "id": generate_part_id()}],
-                "messageID": message_id,
-            }
-        )
+        payload = {
+            "parts": [{"type": "text", "text": text, "id": generate_part_id()}],
+            "messageID": message_id,
+        }
 
         if agent:
             payload["agent"] = agent

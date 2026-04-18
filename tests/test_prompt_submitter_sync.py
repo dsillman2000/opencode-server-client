@@ -31,8 +31,10 @@ class TestPromptSubmitter(TestCase):
         self.mock_http_client.post.assert_called_once()
         args, kwargs = self.mock_http_client.post.call_args
         self.assertEqual(args[0], "/session/abc123/prompt_async")
-        self.assertEqual(kwargs["json"]["text"], "What files are in this directory?")
-        self.assertIn("message_id", kwargs["json"])
+        self.assertEqual(
+            kwargs["json"]["parts"][0]["text"], "What files are in this directory?"
+        )
+        self.assertIn("messageID", kwargs["json"])
 
     def test_submit_prompt_with_agent(self):
         """Test submit_prompt() with agent parameter."""
@@ -93,8 +95,8 @@ class TestPromptSubmitter(TestCase):
         )
 
         args, kwargs = self.mock_http_client.post.call_args
-        self.assertIn("message_id", kwargs["json"])
-        message_id = kwargs["json"]["message_id"]
+        self.assertIn("messageID", kwargs["json"])
+        message_id = kwargs["json"]["messageID"]
         self.assertIsNotNone(message_id)
         self.assertTrue(message_id.startswith("msg_"))
         self.assertEqual(len(message_id), 30)
@@ -113,7 +115,7 @@ class TestPromptSubmitter(TestCase):
         )
 
         args, kwargs = self.mock_http_client.post.call_args
-        self.assertEqual(kwargs["json"]["message_id"], "custom_id")
+        self.assertEqual(kwargs["json"]["messageID"], "custom_id")
 
     def test_submit_prompt_autogenerates_part_id(self):
         """Test submit_prompt() auto-generates OpenCode-style part IDs."""
