@@ -8,4 +8,4 @@ compile:
 	uv run python3 -m compileall src
 
 lint:
-	uv run ruff format src tests
+	uv run ruff check src tests --fix --unsafe-fixes

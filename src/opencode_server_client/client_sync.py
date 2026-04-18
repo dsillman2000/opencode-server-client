@@ -31,7 +31,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from opencode_server_client.config import RetryConfig, ServerConfig
 from opencode_server_client.events.sync_subscriber import EventSubscriber
-from opencode_server_client.events.types import MessageUpdatedEvent, SessionIdleEvent
+from opencode_server_client.events.types import AnyEvent, SessionIdleEvent
 from opencode_server_client.http_client.sync_client import SyncHttpClient
 from opencode_server_client.prompt.sync_submitter import PromptSubmitter
 from opencode_server_client.provider.sync_manager import ProviderManager
@@ -122,13 +122,9 @@ class OpencodeServerClient:
         Returns:
             Session metadata dict
         """
-        return self.sessions.create(
-            title=title, parent_id=parent_id, directory=directory
-        )
+        return self.sessions.create(title=title, parent_id=parent_id, directory=directory)
 
-    def list_all_sessions(
-        self, directory: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    def list_all_sessions(self, directory: Optional[str] = None) -> List[Dict[str, Any]]:
         """List all sessions in a directory.
 
         Args:
@@ -194,8 +190,10 @@ class OpencodeServerClient:
         text: str,
         timeout: float = 30.0,
         abort: bool = False,
-        on_message: Optional[Callable[[MessageUpdatedEvent], None]] = None,
+        on_event: Optional[Callable[[AnyEvent], None]] = None,
         directory: Optional[str] = None,
+        model_id: Optional[str] = None,
+        provider_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Submit a prompt and wait for the session to become idle.
 
@@ -210,8 +208,10 @@ class OpencodeServerClient:
             text: Prompt text
             timeout: Maximum time to wait for idle (seconds)
             abort: If True, abort session before submitting
-            on_message: Optional callback for each message event
+            on_event: Optional callback for each event (MessageUpdatedEvent, etc.)
             directory: Optional directory context
+            model_id: Optional model ID (e.g., "big-pickle", "opus-4.6")
+            provider_id: Optional provider ID (e.g., "opencode", "anthropic")
 
         Returns:
             List of messages collected during wait (from message.updated events)
@@ -222,25 +222,12 @@ class OpencodeServerClient:
         messages: List[Dict[str, Any]] = []
         idle_event = threading.Event()
 
-        def handle_message(event: MessageUpdatedEvent):
-            messages.append(
-                {
-                    "message_id": event.message_id,
-                    "content": event.content,
-                    "timestamp": event.timestamp.isoformat(),
-                }
-            )
-            if on_message:
-                on_message(event)
-
-        def handle_idle(event: SessionIdleEvent):
+        def handle_idle(_: SessionIdleEvent):
             idle_event.set()
 
         # Subscribe to events
         self.events.subscribe(
-            on_event=lambda e: (
-                handle_message(e) if isinstance(e, MessageUpdatedEvent) else None
-            ),
+            on_event=on_event,
             on_idle=handle_idle,
             session_id_filter=session_id,
         )
@@ -252,13 +239,13 @@ class OpencodeServerClient:
                 text=text,
                 abort=abort,
                 directory=directory,
+                model_id=model_id,
+                provider_id=provider_id,
             )
 
             # Wait for idle event or timeout
             if not idle_event.wait(timeout=timeout):
-                raise TimeoutError(
-                    f"Session {session_id} did not become idle within {timeout}s"
-                )
+                raise TimeoutError(f"Session {session_id} did not become idle within {timeout}s")
 
             return messages
 

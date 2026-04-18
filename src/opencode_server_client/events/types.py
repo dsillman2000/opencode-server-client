@@ -85,17 +85,20 @@ class MessageUpdatedEvent:
     Attributes:
         session_id: ID of the session containing the message
         message_id: ID of the message
-        content: Updated message content
+        finish: Finish reason if present (e.g., "stop", "length")
+        info: Full message info dict
         timestamp: When the update occurred
     """
 
     session_id: str
     message_id: str
-    cost: Optional[float]
-    tokens: Optional[dict]
-    created_timestamp: Optional[datetime]
-    completed_timestamp: Optional[datetime]
-    timestamp: datetime
+    finish: Optional[str] = None
+    info: Optional[dict] = None
+    cost: Optional[float] = None
+    tokens: Optional[dict] = None
+    created_timestamp: Optional[datetime] = None
+    completed_timestamp: Optional[datetime] = None
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
