@@ -137,7 +137,7 @@ from opencode_server_client.identifiers import (
 )
 from opencode_server_client.prompt import PromptSubmitter
 from opencode_server_client.prompt.async_submitter import AsyncPromptSubmitter
-from opencode_server_client.provider import ProviderManager
+from opencode_server_client.provider import AsyncProviderManager, ProviderManager
 from opencode_server_client.provider.types import (
     InputCapabilities,
     Model,
@@ -166,6 +166,7 @@ __all__ = [
     "AsyncSessionManager",
     "AsyncPromptSubmitter",
     "AsyncEventSubscriber",
+    "AsyncProviderManager",
     # Managers
     "ProviderManager",
     "SessionManager",
