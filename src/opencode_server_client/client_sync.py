@@ -122,9 +122,13 @@ class OpencodeServerClient:
         Returns:
             Session metadata dict
         """
-        return self.sessions.create(title=title, parent_id=parent_id, directory=directory)
+        return self.sessions.create(
+            title=title, parent_id=parent_id, directory=directory
+        )
 
-    def list_all_sessions(self, directory: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_all_sessions(
+        self, directory: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """List all sessions in a directory.
 
         Args:
@@ -245,7 +249,13 @@ class OpencodeServerClient:
 
             # Wait for idle event or timeout
             if not idle_event.wait(timeout=timeout):
-                raise TimeoutError(f"Session {session_id} did not become idle within {timeout}s")
+                if abort:
+                    self.prompts.abort_session(
+                        session_id=session_id, directory=directory
+                    )
+                raise TimeoutError(
+                    f"Session {session_id} did not become idle within {timeout}s"
+                )
 
             return messages
 

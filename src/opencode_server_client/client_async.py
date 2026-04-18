@@ -115,9 +115,13 @@ class AsyncOpencodeServerClient:
         Returns:
             Session metadata dict
         """
-        return await self.sessions.create(title=title, parent_id=parent_id, directory=directory)
+        return await self.sessions.create(
+            title=title, parent_id=parent_id, directory=directory
+        )
 
-    async def list_all_sessions(self, directory: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def list_all_sessions(
+        self, directory: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """List all sessions in a directory.
 
         Args:
@@ -168,7 +172,9 @@ class AsyncOpencodeServerClient:
             directory=directory,
         )
 
-    async def delete_session(self, session_id: str, directory: Optional[str] = None) -> None:
+    async def delete_session(
+        self, session_id: str, directory: Optional[str] = None
+    ) -> None:
         """Delete a session.
 
         Args:
@@ -240,7 +246,13 @@ class AsyncOpencodeServerClient:
             while not idle_event.is_set():
                 elapsed = asyncio.get_event_loop().time() - start_time
                 if elapsed >= timeout:
-                    raise TimeoutError(f"Session {session_id} did not become idle within {timeout}s")
+                    if abort:
+                        await self.prompts.abort_session(
+                            session_id=session_id, directory=directory
+                        )
+                    raise TimeoutError(
+                        f"Session {session_id} did not become idle within {timeout}s"
+                    )
                 await asyncio.sleep(poll_interval)
 
             return messages
