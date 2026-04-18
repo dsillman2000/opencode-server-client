@@ -19,9 +19,7 @@ class TestAsyncSessionManager(TestCase):
         self.mock_http_client.get = AsyncMock()
         self.mock_http_client.delete = AsyncMock()
         self.mock_http_client.request = AsyncMock()
-        self.manager = AsyncSessionManager(
-            self.mock_http_client, default_directory="/default/dir"
-        )
+        self.manager = AsyncSessionManager(self.mock_http_client, default_directory="/default/dir")
 
     def tearDown(self):
         """Clean up event loop."""
@@ -42,7 +40,6 @@ class TestAsyncSessionManager(TestCase):
         self.mock_http_client.post.assert_called_once()
         args, kwargs = self.mock_http_client.post.call_args
         self.assertEqual(args[0], "/session")
-        self.assertEqual(kwargs["directory"], "/default/dir")
 
     def test_create_with_title_and_parent(self):
         """Test create() with title and parent_id."""
@@ -53,9 +50,7 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.post.return_value = mock_response
 
-        self.loop.run_until_complete(
-            self.manager.create(title="Test Session", parent_id="parent123")
-        )
+        self.loop.run_until_complete(self.manager.create(title="Test Session", parent_id="parent123"))
 
         self.mock_http_client.post.assert_called_once()
         args, kwargs = self.mock_http_client.post.call_args
@@ -163,16 +158,13 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.request.return_value = mock_response
 
-        result = self.loop.run_until_complete(
-            self.manager.update("abc123", title="Example rename")
-        )
+        result = self.loop.run_until_complete(self.manager.update("abc123", title="Example rename"))
 
         self.mock_http_client.request.assert_called_once()
         args, kwargs = self.mock_http_client.request.call_args
         self.assertEqual(args[0], "PATCH")
         self.assertEqual(args[1], "/session/abc123")
         self.assertEqual(kwargs["json"], {"title": "Example rename"})
-        self.assertEqual(kwargs["directory"], "/default/dir")
         self.assertEqual(result["title"], "Example rename")
 
     def test_update_requires_changes(self):
@@ -210,9 +202,7 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.get.return_value = mock_response
 
-        self.loop.run_until_complete(
-            self.manager.get("abc123", directory="/override/dir")
-        )
+        self.loop.run_until_complete(self.manager.get("abc123", directory="/override/dir"))
 
         args, kwargs = self.mock_http_client.get.call_args
         self.assertEqual(kwargs["directory"], "/override/dir")

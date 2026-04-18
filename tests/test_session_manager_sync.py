@@ -14,9 +14,7 @@ class TestSessionManager(TestCase):
     def setUp(self):
         """Set up mock HTTP client for tests."""
         self.mock_http_client = MagicMock()
-        self.manager = SessionManager(
-            self.mock_http_client, default_directory="/default/dir"
-        )
+        self.manager = SessionManager(self.mock_http_client, default_directory="/default/dir")
 
     def test_create_minimal_params(self):
         """Test create() with minimal parameters."""
@@ -30,7 +28,6 @@ class TestSessionManager(TestCase):
         self.mock_http_client.post.assert_called_once()
         args, kwargs = self.mock_http_client.post.call_args
         self.assertEqual(args[0], "/session")
-        self.assertEqual(kwargs["directory"], "/default/dir")
 
     def test_create_with_title_and_parent(self):
         """Test create() with title and parent_id."""
@@ -59,9 +56,7 @@ class TestSessionManager(TestCase):
 
     def test_create_with_error(self):
         """Test create() handles errors gracefully."""
-        self.mock_http_client.post.return_value.raise_for_status.side_effect = (
-            Exception("400 Bad Request")
-        )
+        self.mock_http_client.post.return_value.raise_for_status.side_effect = Exception("400 Bad Request")
 
         with self.assertRaises(Exception):
             self.manager.create()
@@ -114,9 +109,7 @@ class TestSessionManager(TestCase):
 
     def test_get_not_found(self):
         """Test get() with 404 error."""
-        self.mock_http_client.get.return_value.raise_for_status.side_effect = Exception(
-            "404 Not Found"
-        )
+        self.mock_http_client.get.return_value.raise_for_status.side_effect = Exception("404 Not Found")
 
         with self.assertRaises(Exception):
             self.manager.get("nonexistent")
@@ -135,7 +128,6 @@ class TestSessionManager(TestCase):
         self.assertEqual(args[0], "PATCH")
         self.assertEqual(args[1], "/session/abc123")
         self.assertEqual(kwargs["json"], {"title": "Example rename"})
-        self.assertEqual(kwargs["directory"], "/default/dir")
         self.assertEqual(result["title"], "Example rename")
 
     def test_update_requires_changes(self):
@@ -155,9 +147,7 @@ class TestSessionManager(TestCase):
 
     def test_delete_not_found(self):
         """Test delete() with 404 error."""
-        self.mock_http_client.delete.return_value.raise_for_status.side_effect = (
-            Exception("404 Not Found")
-        )
+        self.mock_http_client.delete.return_value.raise_for_status.side_effect = Exception("404 Not Found")
 
         with self.assertRaises(Exception):
             self.manager.delete("nonexistent")

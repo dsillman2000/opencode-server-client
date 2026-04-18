@@ -66,7 +66,6 @@ class AsyncSessionManager:
         Raises:
             SessionCreationError: If session creation fails
         """
-        dir_context = directory or self.default_directory
 
         payload = {}
         if title:
@@ -78,7 +77,7 @@ class AsyncSessionManager:
             response = await self.http_client.post(
                 "/session",
                 json=payload if payload else None,
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             return response.json()
@@ -101,12 +100,11 @@ class AsyncSessionManager:
         Raises:
             SessionError: If listing fails
         """
-        dir_context = directory or self.default_directory
 
         try:
             response = await self.http_client.get(
                 "/session",
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             data = response.json()
@@ -138,12 +136,11 @@ class AsyncSessionManager:
             SessionNotFoundError: If session not found (404)
             SessionError: If retrieval fails
         """
-        dir_context = directory or self.default_directory
 
         try:
             response = await self.http_client.get(
                 f"/session/{session_id}",
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             return response.json()
@@ -175,7 +172,6 @@ class AsyncSessionManager:
             ValueError: If no update fields were provided
             SessionError: If the update fails
         """
-        dir_context = directory or self.default_directory
 
         payload = {}
         if title is not None:
@@ -191,7 +187,7 @@ class AsyncSessionManager:
                 "PATCH",
                 f"/session/{session_id}",
                 json=payload,
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             return response.json()
@@ -214,12 +210,11 @@ class AsyncSessionManager:
             SessionNotFoundError: If session not found (404)
             SessionError: If deletion fails
         """
-        dir_context = directory or self.default_directory
 
         try:
             response = await self.http_client.delete(
                 f"/session/{session_id}",
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
         except Exception as e:

@@ -65,7 +65,6 @@ class SessionManager:
         Raises:
             SessionCreationError: If session creation fails
         """
-        dir_context = directory or self.default_directory
 
         payload = {}
         if title:
@@ -77,7 +76,7 @@ class SessionManager:
             response = self.http_client.post(
                 "/session",
                 json=payload if payload else None,
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             return response.json()
@@ -100,12 +99,11 @@ class SessionManager:
         Raises:
             SessionError: If listing fails
         """
-        dir_context = directory or self.default_directory
 
         try:
             response = self.http_client.get(
                 "/session",
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             data = response.json()
@@ -138,12 +136,11 @@ class SessionManager:
             SessionNotFoundError: If session not found (404)
             SessionError: If retrieval fails
         """
-        dir_context = directory or self.default_directory
 
         try:
             response = self.http_client.get(
                 f"/session/{session_id}",
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             return response.json()
@@ -175,8 +172,6 @@ class SessionManager:
             ValueError: If no update fields were provided
             SessionError: If the update fails
         """
-        dir_context = directory or self.default_directory
-
         payload = {}
         if title is not None:
             payload["title"] = title
@@ -191,7 +186,7 @@ class SessionManager:
                 "PATCH",
                 f"/session/{session_id}",
                 json=payload,
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
             return response.json()
@@ -214,12 +209,11 @@ class SessionManager:
             SessionNotFoundError: If session not found (404)
             SessionError: If deletion fails
         """
-        dir_context = directory or self.default_directory
 
         try:
             response = self.http_client.delete(
                 f"/session/{session_id}",
-                directory=dir_context,
+                directory=directory,
             )
             response.raise_for_status()
         except Exception as e:
