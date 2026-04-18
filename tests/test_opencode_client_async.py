@@ -207,7 +207,7 @@ class TestAsyncOpencodeServerClientConvenienceMethods(TestCase):
             mock_event.is_set = MagicMock(side_effect=[False, True])
             mock_event_cls.return_value = mock_event
 
-            result = self.loop.run_until_complete(
+            self.loop.run_until_complete(
                 client.submit_prompt_and_wait(session_id="abc123", text="Test prompt")
             )
 

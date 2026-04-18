@@ -329,7 +329,6 @@ class AsyncEventSubscriber:
             callback: The callback function to invoke
             event: The event to pass to the callback
         """
-        import inspect
 
         if asyncio.iscoroutinefunction(callback):
             asyncio.create_task(callback(event))

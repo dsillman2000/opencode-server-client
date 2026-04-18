@@ -37,7 +37,7 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.post.return_value = mock_response
 
-        result = self.loop.run_until_complete(self.manager.create())
+        self.loop.run_until_complete(self.manager.create())
 
         self.mock_http_client.post.assert_called_once()
         args, kwargs = self.mock_http_client.post.call_args
@@ -53,7 +53,7 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.post.return_value = mock_response
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.manager.create(title="Test Session", parent_id="parent123")
         )
 
@@ -72,7 +72,7 @@ class TestAsyncSessionManager(TestCase):
         mock_response.raise_for_status = MagicMock()
         self.mock_http_client.post.return_value = mock_response
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.manager.create(directory="/custom/dir")
         )
 

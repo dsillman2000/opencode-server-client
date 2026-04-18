@@ -8,7 +8,6 @@ from opencode_server_client.events.async_subscriber import AsyncEventSubscriber
 from opencode_server_client.events.types import (
     SessionIdleEvent,
     SessionErrorEvent,
-    MessageUpdatedEvent,
 )
 
 
@@ -85,7 +84,7 @@ class TestAsyncEventSubscriber(TestCase):
     @patch.object(AsyncEventSubscriber, "_read_sse_stream")
     def test_async_iterator_pattern(self, mock_read):
         """Test async iterator pattern works."""
-        mock_read = AsyncMock()
+        AsyncMock()
 
         async def mock_stream():
             mock_ctx = MagicMock()
@@ -368,7 +367,6 @@ class TestAsyncEventSubscriberAsyncCallbacks(TestCase):
 
     def test_mixed_sync_async_callbacks(self):
         """Test both sync and async callbacks can be registered."""
-        from opencode_server_client.events.types import MessageUpdatedEvent
 
         received_sync = []
         received_async = []

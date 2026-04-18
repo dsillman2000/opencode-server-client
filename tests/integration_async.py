@@ -2,7 +2,6 @@
 
 import asyncio
 from unittest import TestCase
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from opencode_server_client.client_async import AsyncOpencodeServerClient
 from opencode_server_client.config import ServerConfig

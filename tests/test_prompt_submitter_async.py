@@ -45,7 +45,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with agent parameter."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(session_id="abc123", text="Test", agent="plan")
         )
 
@@ -57,7 +57,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with system prompt."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(
                 session_id="abc123",
                 text="Test",
@@ -74,7 +74,7 @@ class TestAsyncPromptSubmitter(TestCase):
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
         tools_config = {"enabled": True, "allowed_tools": ["read", "write"]}
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(
                 session_id="abc123", text="Test", tools=tools_config
             )
@@ -88,7 +88,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() auto-generates message_id."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(session_id="abc123", text="Test")
         )
 
@@ -116,7 +116,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with abort=False (no abort call)."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(session_id="abc123", text="Test", abort=False)
         )
 
@@ -126,7 +126,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with abort=True (abort then submit)."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(session_id="abc123", text="Test", abort=True)
         )
 
@@ -157,7 +157,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() includes directory context."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(
                 session_id="abc123",
                 text="Hello",
@@ -172,7 +172,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with provider_id and model_id."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(
                 session_id="abc123",
                 text="Hello",
@@ -190,7 +190,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with provider_id only."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(
                 session_id="abc123",
                 text="Hello",
@@ -207,7 +207,7 @@ class TestAsyncPromptSubmitter(TestCase):
         """Test submit_prompt() with model_id only."""
         self.mock_http_client.post.return_value.raise_for_status = MagicMock()
 
-        result = self.loop.run_until_complete(
+        self.loop.run_until_complete(
             self.submitter.submit_prompt(
                 session_id="abc123",
                 text="Hello",
