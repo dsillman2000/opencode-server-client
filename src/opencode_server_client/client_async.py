@@ -42,7 +42,7 @@ class AsyncOpencodeServerClient:
     This client aggregates:
     - ProviderManager: Query available providers and their models
     - AsyncSessionManager: Create, list, get, delete sessions
-    - AsyncPromptSubmitter: Submit prompts with optional abort
+    - AsyncPromptSubmitter: Submit prompts and abort sessions
     - AsyncEventSubscriber: Subscribe to real-time events via SSE
 
     It also provides convenience methods for common workflows like
@@ -182,6 +182,25 @@ class AsyncOpencodeServerClient:
             directory: Optional directory context
         """
         await self.sessions.delete(session_id, directory=directory)
+
+    async def abort(self, session_id: str, directory: Optional[str] = None) -> None:
+        """Abort an active session.
+
+        This method allows you to abort a session that is currently running.
+        A common pattern is to check the session status before aborting:
+
+            session = await client.sessions.get(session_id, directory=dir)
+            if session["status"]["type"] == "busy":
+                await client.abort(session_id, directory=dir)
+
+        Args:
+            session_id: ID of session to abort
+            directory: Optional directory context
+
+        Raises:
+            ClientError: If the abort request fails
+        """
+        await self.prompts.abort_session(session_id=session_id, directory=directory)
 
     async def submit_prompt_and_wait(
         self,

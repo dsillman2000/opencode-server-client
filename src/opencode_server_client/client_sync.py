@@ -46,7 +46,7 @@ class OpencodeServerClient:
     This client aggregates four layers:
     - ProviderManager: Query available providers and their models
     - SessionManager: Create, list, get, delete sessions
-    - PromptSubmitter: Submit prompts with optional abort
+    - PromptSubmitter: Submit prompts and abort sessions
     - EventSubscriber: Subscribe to real-time events via SSE
 
     It also provides convenience methods for common workflows like
@@ -187,6 +187,25 @@ class OpencodeServerClient:
             directory: Optional directory context
         """
         self.sessions.delete(session_id, directory=directory)
+
+    def abort(self, session_id: str, directory: Optional[str] = None) -> None:
+        """Abort an active session.
+
+        This method allows you to abort a session that is currently running.
+        A common pattern is to check the session status before aborting:
+
+            session = client.sessions.get(session_id, directory=dir)
+            if session["status"]["type"] == "busy":
+                client.abort(session_id, directory=dir)
+
+        Args:
+            session_id: ID of session to abort
+            directory: Optional directory context
+
+        Raises:
+            ClientError: If the abort request fails
+        """
+        self.prompts.abort_session(session_id=session_id, directory=directory)
 
     def submit_prompt_and_wait(
         self,
